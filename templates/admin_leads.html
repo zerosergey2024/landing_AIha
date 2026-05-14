@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>AIha — Lead Pipeline</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #0b1020;
+            color: #ffffff;
+        }
+
+        h1 {
+            margin-bottom: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #121a30;
+        }
+
+        th, td {
+            border: 1px solid #2c3550;
+            padding: 12px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #1b2745;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 70px;
+            background: #0f172b;
+            color: white;
+            border: 1px solid #334;
+            padding: 8px;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            background: #0f172b;
+            color: white;
+            border: 1px solid #334;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 16px;
+            border: 0;
+            cursor: pointer;
+            background: #2272ff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .lead-card {
+            margin-bottom: 40px;
+            border: 1px solid #334;
+            padding: 20px;
+            background: #121a30;
+        }
+
+        .meta {
+            color: #9fb3d9;
+            margin-bottom: 10px;
+        }
+
+        .qualification {
+            background: #0f172b;
+            padding: 14px;
+            margin-top: 12px;
+        }
+        .filters {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto auto;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+}
+
+.filters input,
+.filters select {
+    padding: 10px;
+    background: #0f172b;
+    color: white;
+    border: 1px solid #334;
+}
+
+.reset-link {
+    color: #8fd8ff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.reset-link:hover {
+    text-decoration: underline;
+}
+    </style>
+</head>
+
+<body>
+
+<h1>AIha — Lead Pipeline</h1>
+
+<p>
+    <a href="/admin/logout">Выйти</a>
+</p>
+
+<form method="get" action="/admin/leads" class="filters">
+    <input
+        type="text"
+        name="q"
+        placeholder="Поиск: имя, телефон, компания, задача"
+        value="{{ current_query }}"
+    >
+
+    <select name="status">
+        <option value="">Все статусы</option>
+        {% for code, label in statuses.items() %}
+            <option value="{{ label }}" {% if current_status == label %}selected{% endif %}>
+                {{ label }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <select name="priority">
+        <option value="">Все приоритеты</option>
+        {% for priority in priorities %}
+            <option value="{{ priority }}" {% if current_priority == priority %}selected{% endif %}>
+                {{ priority }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Применить</button>
+    <a href="/admin/leads" class="reset-link">Сбросить</a>
+</form>
+
+<form method="post" action="/admin/export-xlsx" style="margin-bottom: 24px;">
+    <button type="submit">Экспортировать в Excel</button>
+</form>
+
+{% for lead in leads %}
+
+<div class="lead-card">
+
+    <div class="meta">
+        ID: {{ lead.id }} |
+        <a href="/admin/leads/{{ lead.id }}">Открыть карточку</a>
+        Источник: {{ lead.source }} |
+        Создано: {{ lead.created_at }}
+    </div>
+
+    <h2>{{ lead.name }}</h2>
+
+    <p>
+        <strong>Телефон:</strong> {{ lead.phone }}
+    </p>
+
+    <p>
+        <strong>Компания:</strong> {{ lead.company }}
+    </p>
+
+    <p>
+        <strong>Задача:</strong><br>
+        {{ lead.message }}
+    </p>
+
+    <div class="qualification">
+        <strong>AI-квалификация</strong>
+
+        <p><strong>Отрасль:</strong> {{ lead.industry }}</p>
+        <p><strong>Процесс:</strong> {{ lead.process }}</p>
+        <p><strong>AI-сценарий:</strong> {{ lead.ai_type }}</p>
+        <p><strong>Эффект:</strong> {{ lead.effect }}</p>
+        <p><strong>Приоритет:</strong> {{ lead.priority }}</p>
+    </div>
+
+    <form method="post" action="/api/leads/{{ lead.id }}/status">
+
+        <p>
+            <strong>Статус</strong>
+        </p>
+
+        <select name="status">
+
+            {% for code, label in statuses.items() %}
+
+                <option
+                    value="{{ code }}"
+                    {% if label == lead.status %}selected{% endif %}
+                >
+                    {{ label }}
+                </option>
+
+            {% endfor %}
+
+        </select>
+
+        <p>
+            <strong>Комментарий менеджера</strong>
+        </p>
+
+        <textarea name="manager_comment">{{ lead.manager_comment }}</textarea>
+
+        <button type="submit">
+            Сохранить
+        </button>
+
+    </form>
+
+</div>
+
+{% endfor %}
+
+</body>
+</html>

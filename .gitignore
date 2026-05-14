@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+
+.env
+
+leads.db
+leads_archive.db
+
+exports/
+backups/
+
+.DS_Store
+.idea/
+.vscode/

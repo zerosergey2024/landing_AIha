@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>AIha — вход в панель</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0b1020;
+            color: white;
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .login-card {
+            width: min(420px, calc(100% - 40px));
+            background: #121a30;
+            border: 1px solid #334;
+            padding: 32px;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 14px;
+            padding: 12px;
+            background: #0f172b;
+            color: white;
+            border: 1px solid #334;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: 0;
+            background: #2272ff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .error {
+            color: #ff8f8f;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <form class="login-card" method="post" action="/admin/login">
+        <h1>AIha Admin</h1>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <input name="username" placeholder="Логин" required>
+        <input name="password" type="password" placeholder="Пароль" required>
+
+        <button type="submit">Войти</button>
+    </form>
+</body>
+</html>

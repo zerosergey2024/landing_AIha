@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Заявка #{{ lead.id }} — AIha</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #0b1020;
+            color: #ffffff;
+        }
+
+        a {
+            color: #8fd8ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .page {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #121a30;
+            border: 1px solid #334;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .meta {
+            color: #9fb3d9;
+            margin-bottom: 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .field {
+            background: #0f172b;
+            padding: 14px;
+            border: 1px solid #2c3550;
+        }
+
+        .field strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #8fd8ff;
+        }
+
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #0f172b;
+            color: white;
+            border: 1px solid #334;
+        }
+
+        textarea {
+            min-height: 100px;
+        }
+
+        button {
+            margin-top: 14px;
+            padding: 11px 18px;
+            border: 0;
+            cursor: pointer;
+            background: #2272ff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .message {
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+<div class="page">
+
+    <p><a href="/admin/leads">← Назад к pipeline</a></p>
+
+    <h1>Заявка #{{ lead.id }}</h1>
+
+    <div class="meta">
+        Источник: {{ lead.source }} |
+        Создано: {{ lead.created_at }} |
+        Обновлено: {{ lead.updated_at }}
+    </div>
+
+    <div class="card">
+        <h2>Контакт</h2>
+
+        <div class="grid">
+            <div class="field">
+                <strong>Имя</strong>
+                {{ lead.name }}
+            </div>
+
+            <div class="field">
+                <strong>Телефон</strong>
+                {{ lead.phone }}
+            </div>
+
+            <div class="field">
+                <strong>Компания</strong>
+                {{ lead.company or "Не указана" }}
+            </div>
+
+            <div class="field">
+                <strong>Статус</strong>
+                {{ lead.status }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Задача</h2>
+        <div class="message">{{ lead.message }}</div>
+    </div>
+
+    <div class="card">
+        <h2>AI-квалификация</h2>
+
+        <div class="grid">
+            <div class="field">
+                <strong>Отрасль</strong>
+                {{ lead.industry }}
+            </div>
+
+            <div class="field">
+                <strong>Процесс</strong>
+                {{ lead.process }}
+            </div>
+
+            <div class="field">
+                <strong>AI-сценарий</strong>
+                {{ lead.ai_type }}
+            </div>
+
+            <div class="field">
+                <strong>Эффект</strong>
+                {{ lead.effect }}
+            </div>
+
+            <div class="field">
+                <strong>Приоритет</strong>
+                {{ lead.priority }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Управление заявкой</h2>
+
+        <form method="post" action="/api/leads/{{ lead.id }}/status">
+            <p><strong>Статус</strong></p>
+
+            <select name="status">
+                {% for code, label in statuses.items() %}
+                    <option value="{{ code }}" {% if label == lead.status %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <p><strong>Комментарий менеджера</strong></p>
+
+            <textarea name="manager_comment">{{ lead.manager_comment }}</textarea>
+
+            <button type="submit">Сохранить изменения</button>
+        </form>
+    </div>
+
+</div>
+</body>
+</html>
