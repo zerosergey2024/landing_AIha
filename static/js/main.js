@@ -81,7 +81,7 @@ async function submitForm(form, statusNode, endpoint, successMessage) {
     return result;
   } catch (error) {
     if (statusNode) {
-      statusNode.textContent = error.message || "Ошибка отправки.";
+      statusNode.textContent = "Не удалось отправить заявку. Попробуйте позже.";
     }
 
     console.error("Form submit error:", error);
