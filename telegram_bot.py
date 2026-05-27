@@ -20,211 +20,39 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 user_sessions = {}
 
-SYSTEM_PROMPT = """
-Ты AI-ассистент студии AIha.
 
-AIha занимается:
-- AI-интеграцией;
-- автоматизацией процессов;
-- AI для производства;
-- AI для заказов и клиентского сервиса;
-- AI для HR;
-- AI для логистики;
-- AI для документооборота;
-- AI для внутренних процессов компаний.
+CONTACT_REQUEST_TEXT = (
+    "Если вы заинтересованы в автоматизации рутинных процессов своего бизнеса, "
+    "оставьте, пожалуйста, свои координаты: имя и телефон, Telegram или email."
+)
 
-Твоя роль:
-не "чат-бот" и не "психологический помощник".
+SPAM_PATTERNS = [
+    "searchregister",
+    "google search index",
+    "seo",
+    "backlink",
+    "traffic",
+    "ranking",
+    "domain authority",
+    "casino",
+    "crypto",
+    "forex",
+    "viagra",
+    "adult traffic",
+]
 
-Ты:
-- AI intake operator;
-- AI business analyst;
-- AI pre-sales assistant.
+SPAM_COMPANIES = [
+    "web search index",
+]
 
-Твоя задача:
-- выявить бизнес-проблему;
-- определить процесс;
-- понять текущие ограничения;
-- оценить потенциал AI-автоматизации;
-- подготовить structured lead.
+def is_spam_lead(text):
+    lower = text.lower()
 
-ОБЯЗАТЕЛЬНОЕ ПРАВИЛО:
-lead_ready=true можно устанавливать только если есть:
-- бизнес-задача;
-- имя клиента;
-- контакт для связи: телефон, Telegram или email.
+    for pattern in SPAM_PATTERNS:
+        if pattern in lower:
+            return True
 
-Если бизнес-задача понятна, но имени или контакта нет:
-- НЕ продолжай задавать вопросы по бизнесу;
-- НЕ проси повторно описывать задачу;
-- кратко резюмируй задачу;
-- попроси имя и контакт для связи.
-
-Если клиент уже дал имя и контакт:
-- не запрашивай их повторно.
-
-Стиль общения:
-- профессиональный;
-- спокойный;
-- деловой;
-- инженерный;
-- краткий;
-- уверенный.
-
-НЕ используй:
-- эмоциональную поддержку;
-- психологические фразы;
-- длинные вступления;
-- рекламные обещания;
-- чрезмерную вежливость;
-- фразы вроде:
-  "мне жаль",
-  "это стрессовая ситуация",
-  "отличная инвестиция",
-  "мы рады помочь".
-
-Отвечай:
-- коротко;
-- предметно;
-- с фокусом на процессе.
-
-Задавай:
-- только один логичный вопрос за сообщение;
-- только вопросы, влияющие на qualification или получение контакта.
-
-Если информации уже достаточно:
-- не продолжай длинный опрос;
-- переходи к завершению qualification.
-
-Если клиент уже:
-- описал бизнес;
-- описал процесс;
-- обозначил проблему;
-- обозначил желаемую автоматизацию;
-
-НЕ продолжай длинный опрос.
-НЕ задавай повторяющиеся вопросы.
-НЕ проси "рассказать подробнее", если задача уже понятна.
-
-Вместо этого:
-- кратко подтверди понимание;
-- предложи следующий шаг;
-- запроси имя и контакт для связи, если их ещё нет.
-
-Ты должен избегать:
-- циклических вопросов;
-- повторного qualification;
-- бесконечного уточнения очевидного.
-
-Когда lead почти сформирован:
-- кратко резюмируй задачу;
-- попроси имя и контакт для связи.
-
-Если клиент не хочет обсуждать детали:
-- не дави;
-- зафиксируй имеющуюся задачу;
-- запроси имя и контакт;
-- после получения контакта переводи в lead.
-
-Если разговор уходит в сторону:
-- не обсуждай темы вне компетенции AIha;
-- мягко возвращай разговор к бизнес-задаче.
-
-Ты должен выявлять:
-- pain points;
-- bottlenecks;
-- зависимость от ручного труда;
-- проблемы масштабирования;
-- проблемы диспетчеризации;
-- проблемы обработки заявок;
-- проблемы контроля процессов.
-
-Ты должен понимать:
-- производство;
-- рестораны и доставку еды;
-- розницу;
-- сервисные процессы;
-- HR;
-- логистику;
-- документооборот;
-- внутренние операции компаний.
-
-Информации по бизнес-задаче обычно достаточно, если понятны:
-- тип бизнеса;
-- проблема;
-- процесс;
-- желаемый эффект.
-
-ПРИМЕРЫ ПРАВИЛЬНОГО ПОВЕДЕНИЯ
-
-Пример 1.
-
-Клиент:
-Нужна автоматизация приема заказов.
-
-Правильный ответ:
-{
-  "reply": "Понял. AIha может автоматизировать прием заказов и связать этот процесс с доставкой, уведомлениями или учетной системой. Оставьте имя и удобный контакт для связи: телефон, Telegram или email.",
-  "industry": "Сервис / доставка еды",
-  "process": "Прием заказов",
-  "problem": "Ручная обработка заказов",
-  "goal": "Автоматизировать прием заказов и снизить ручной труд",
-  "priority": "Средний",
-  "summary": "Клиент хочет автоматизировать прием заказов и доставку готовой еды.",
-  "client_name": "",
-  "contact": "",
-  "lead_ready": false
-}
-
-Пример 2.
-
-Клиент:
-Эдуард, +7 902 257 4223
-
-Правильный ответ:
-{
-  "reply": "Спасибо, Эдуард. Заявку зафиксировал: нужна автоматизация приема заказов и доставки готовой еды. Следующий шаг — специалист AIha свяжется с вами для уточнения деталей.",
-  "industry": "Сервис / доставка еды",
-  "process": "Прием заказов",
-  "problem": "Ручная обработка заказов",
-  "goal": "Автоматизировать прием заказов и передачу заявок в рабочий процесс",
-  "priority": "Средний",
-  "summary": "Клиент хочет автоматизировать прием заказов и доставку готовой еды. Контакт: Эдуард, +7 902 257 4223.",
-  "client_name": "Эдуард",
-  "contact": "+7 902 257 4223",
-  "lead_ready": true
-}
-
-Запрещено:
-- придумывать название компании, если клиент его не сообщил;
-- говорить, что будет использована CMS, если клиент этого не просил;
-- обещать интеграцию со шлюзом доставки без уточнения;
-- продолжать задавать вопросы, если клиент уже просит автоматизацию и оставил контакт.
-После анализа всегда возвращай JSON.
-
-Формат JSON:
-
-{
-  "reply": "ответ клиенту",
-  "industry": "",
-  "process": "",
-  "problem": "",
-  "goal": "",
-  "priority": "Низкий|Средний|Высокий",
-  "summary": "",
-  "client_name": "",
-  "contact": "",
-  "lead_ready": false
-}
-
-lead_ready=true только если:
-- понятна бизнес-задача;
-- заполнено client_name;
-- заполнено contact.
-
-Если имя или контакт отсутствуют:
-lead_ready=false.
-"""
+    return False
 
 def now_utc():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -235,42 +63,125 @@ def extract_phone(text):
     return match.group(1).strip() if match else ""
 
 
-def extract_contact(history_text):
-    phone = extract_phone(history_text)
+def extract_email(text):
+    match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    return match.group(0) if match else ""
 
-    email_match = re.search(
-        r"[\w\.-]+@[\w\.-]+\.\w+",
-        history_text
-    )
 
-    telegram_match = re.search(
-        r"@\w+",
-        history_text
-    )
+def extract_telegram(text):
+    match = re.search(r"@\w+", text)
+    return match.group(0) if match else ""
 
+
+def extract_contact(text):
     contacts = []
+
+    phone = extract_phone(text)
+    email = extract_email(text)
+    telegram = extract_telegram(text)
 
     if phone:
         contacts.append(phone)
 
-    if email_match:
-        contacts.append(email_match.group(0))
+    if email:
+        contacts.append(email)
 
-    if telegram_match:
-        contacts.append(telegram_match.group(0))
+    if telegram:
+        contacts.append(telegram)
 
     return ", ".join(contacts)
 
 
-def save_telegram_lead(chat_id, username, history, ai_result):
-    created_at = now_utc()
+def extract_client_name(text, telegram_username=""):
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
 
-    history_text = "\n".join(
+    for line in reversed(lines):
+        clean = line
+
+        if clean.lower().startswith("user:"):
+            clean = clean[5:].strip()
+
+        clean_without_contact = clean
+        clean_without_contact = re.sub(r"(\+?\d[\d\s\-\(\)]{8,}\d)", "", clean_without_contact)
+        clean_without_contact = re.sub(r"[\w\.-]+@[\w\.-]+\.\w+", "", clean_without_contact)
+        clean_without_contact = re.sub(r"@\w+", "", clean_without_contact)
+        clean_without_contact = clean_without_contact.replace(",", " ").strip()
+
+        if (
+            2 <= len(clean_without_contact) <= 80
+            and not any(char.isdigit() for char in clean_without_contact)
+            and len(clean_without_contact.split()) <= 3
+        ):
+            return clean_without_contact
+
+    return telegram_username or ""
+
+
+def has_business_context(text):
+    text = text.lower()
+
+    signals = [
+        "автоматиз",
+        "заказ",
+        "заявк",
+        "доставк",
+        "готовой еды",
+        "резюме",
+        "кандидат",
+        "прием",
+        "отбор",
+        "оценк",
+        "hr",
+        "персонал",
+        "документооборот",
+        "1с",
+        "производство",
+        "оборудование",
+        "логистик",
+        "клиент",
+        "бот",
+        "телефон",
+        "рутин",
+        "процесс",
+    ]
+
+    return sum(signal in text for signal in signals) >= 1
+
+
+def build_history_text(history):
+    return "\n".join(
         f"{item['role']}: {item['content']}"
         for item in history
     )
 
+
+def make_default_ai_result(history_text):
+    return {
+        "industry": "Бизнес-процессы",
+        "process": "Автоматизация процесса",
+        "problem": "Ручная обработка или рутинный процесс",
+        "goal": "Снижение ручного труда и ускорение обработки",
+        "priority": "Средний",
+        "summary": history_text,
+        "client_name": "",
+        "contact": "",
+        "lead_ready": False,
+    }
+
+
+def save_telegram_lead(chat_id, username, history, ai_result):
+    created_at = now_utc()
+    history_text = build_history_text(history)
+
     contact = extract_contact(history_text)
+    client_name = (
+        ai_result.get("client_name")
+        or extract_client_name(history_text, username)
+        or username
+        or f"Telegram user {chat_id}"
+    )
+
+    summary = ai_result.get("summary") or history_text
 
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute(
@@ -294,16 +205,16 @@ def save_telegram_lead(chat_id, username, history, ai_result):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                username or f"Telegram user {chat_id}",
-                contact or "уточнить",
+                client_name,
+                contact or "уточнить в Telegram",
                 "",
-                ai_result.get("summary", history_text),
+                summary,
                 "telegram",
                 created_at,
-                ai_result.get("industry", ""),
-                ai_result.get("process", ""),
+                ai_result.get("industry", "Бизнес-процессы"),
+                ai_result.get("process", "Автоматизация процесса"),
                 "Phi-4 Mini assistant",
-                ai_result.get("goal", ""),
+                ai_result.get("goal", "Снижение ручного труда и ускорение обработки"),
                 ai_result.get("priority", "Средний"),
                 "Новая",
                 "",
@@ -326,11 +237,10 @@ def send_message(chat_id, text):
             },
             timeout=10,
         )
-
         response.raise_for_status()
 
     except requests.RequestException as error:
-        print(f"Telegram send error: {error}")
+        print(f"Telegram polling error: {type(error).__name__}")
 
 
 def reset_session(chat_id, username):
@@ -338,30 +248,16 @@ def reset_session(chat_id, username):
         "username": username,
         "history": [],
         "lead_saved": False,
-        "waiting_for_contact": False,
+        "asked_contact": False,
     }
 
-def has_business_context(history_text):
-    text = history_text.lower()
 
-    signals = [
-        "заказ",
-        "заявк",
-        "доставк",
-        "готовой еды",
-        "1с",
-        "автоматиз",
-        "прием",
-        "клиент",
-        "бот",
-        "телефон",
-        "производств",
-        "оборудован",
-        "hr",
-        "логистик",
-    ]
-
-    return sum(signal in text for signal in signals) >= 2
+def get_ai_result_safe(history):
+    try:
+        return ask_phi4_conversation(history)
+    except Exception as error:
+        print(f"Phi-4 handler error: {error}")
+        return make_default_ai_result(build_history_text(history))
 
 
 def handle_message(update):
@@ -378,29 +274,20 @@ def handle_message(update):
 
     if text == "/reset":
         reset_session(chat_id, username)
-
         send_message(
             chat_id,
             "Диалог сброшен.\n\n"
-            "Опишите задачу, процесс или проблему, где хотите применить AI."
+            "Опишите задачу или процесс, который хотите автоматизировать."
         )
         return
 
     if text in ["/start", "/lead"]:
         reset_session(chat_id, username)
-
         send_message(
             chat_id,
             "Здравствуйте. Это AIha Студия.\n\n"
-            "Опишите задачу, процесс или проблему, где вы хотите применить AI.\n\n"
-            "Это может быть:\n"
-            "• производство\n"
-            "• заказы\n"
-            "• клиентский сервис\n"
-            "• HR\n"
-            "• логистика\n"
-            "• документооборот\n"
-            "• внутренние процессы"
+            "Мы помогаем автоматизировать рутинные процессы бизнеса: заявки, заказы, HR, документы, производство, логистику и клиентский сервис.\n\n"
+            "Опишите коротко, какой процесс хотите автоматизировать."
         )
         return
 
@@ -415,61 +302,35 @@ def handle_message(update):
         "content": text,
     })
 
-    ai_result = ask_phi4_conversation(session["history"])
-
-    ai_reply = ai_result.get(
-        "reply",
-        "Расскажите подробнее о вашей задаче."
-    )
-
-    history_text = "\n".join(
-        item["content"]
-        for item in session["history"]
-    )
-
-    has_contact_now = bool(extract_contact(history_text))
-    business_context_ready = has_business_context(history_text)
-
-    if has_contact_now and business_context_ready and not session["lead_saved"]:
-        ai_result["lead_ready"] = True
-        ai_reply = (
-            "Спасибо. Заявку зафиксировал: нужна автоматизация процесса. "
-            "Специалист AIha свяжется с вами для уточнения деталей."
+    history_text = build_history_text(session["history"])
+    if is_spam_lead(history_text):
+        send_message(
+            chat_id,
+            "Заявка отклонена автоматическим фильтром."
         )
 
-    session["history"].append({
-        "role": "assistant",
-        "content": ai_reply,
-    })
+        session["lead_saved"] = True
+        return
+    contact = extract_contact(history_text)
+    client_name = extract_client_name(history_text, username)
+    business_ready = has_business_context(history_text)
 
-    send_message(chat_id, ai_reply)
-
-    reply_text = ai_reply.lower()
-
-    contact_requested = any([
-        "контакт" in reply_text,
-        "телефон" in reply_text,
-        "email" in reply_text,
-        "telegram" in reply_text,
-        "связи" in reply_text,
-    ])
-
-    history_text = "\n".join(
-        item["content"]
-        for item in session["history"]
-    )
-
-    has_contact = bool(extract_contact(history_text))
-
-    if contact_requested and not has_contact:
-        session["waiting_for_contact"] = True
+    if session["lead_saved"]:
+        send_message(
+            chat_id,
+            "Заявка уже зафиксирована. Специалист AIha свяжется с вами."
+        )
         return
 
-    if (
-            ai_result.get("lead_ready")
-            and has_contact
-            and not session["lead_saved"]
-    ):
+    if contact and business_ready:
+        ai_result = get_ai_result_safe(session["history"])
+        ai_result["lead_ready"] = True
+        ai_result["client_name"] = ai_result.get("client_name") or client_name
+        ai_result["contact"] = ai_result.get("contact") or contact
+
+        if not ai_result.get("summary"):
+            ai_result["summary"] = history_text
+
         lead_id = save_telegram_lead(
             chat_id,
             session.get("username"),
@@ -481,11 +342,35 @@ def handle_message(update):
 
         send_message(
             chat_id,
-            f"Заявка AIha сформирована.\n\n"
+            f"Спасибо. Заявка AIha сформирована.\n\n"
             f"Номер заявки: {lead_id}\n"
-            f"Приоритет: {ai_result.get('priority', 'Средний')}\n\n"
-            f"Мы изучим задачу и свяжемся с вами."
+            f"Специалист AIha свяжется с вами для уточнения деталей."
         )
+        return
+
+    if business_ready and not contact:
+        session["asked_contact"] = True
+        send_message(chat_id, CONTACT_REQUEST_TEXT)
+        return
+
+    ai_result = get_ai_result_safe(session["history"])
+    ai_reply = ai_result.get("reply", "").strip()
+
+    if not ai_reply or len(ai_reply) > 600:
+        ai_reply = CONTACT_REQUEST_TEXT
+
+    if not has_business_context(ai_reply):
+        ai_reply = (
+            "Понял. AIha занимается автоматизацией бизнес-процессов: заявок, заказов, документов, HR, логистики и клиентского сервиса.\n\n"
+            f"{CONTACT_REQUEST_TEXT}"
+        )
+
+    session["history"].append({
+        "role": "assistant",
+        "content": ai_reply,
+    })
+
+    send_message(chat_id, ai_reply)
 
 
 def run_bot():
@@ -507,7 +392,6 @@ def run_bot():
             )
 
             response.raise_for_status()
-
             data = response.json()
 
         except Exception as error:
