@@ -297,36 +297,38 @@ def handle_message(update):
         reset_session(chat_id, username)
         session = user_sessions[chat_id]
 
-    session["history"].append({
-        "role": "user",
-        "content": text,
-    })
-
-    history_text = build_history_text(session["history"])
-    if is_spam_lead(history_text):
-        send_message(
-            chat_id,
-            "Заявка отклонена автоматическим фильтром."
-        )
-
-        session["lead_saved"] = True
-        return
-    contact = extract_contact(history_text)
-    client_name = extract_client_name(history_text, username)
-    business_ready = has_business_context(history_text)
-
-    if session["lead_saved"]:
+    if session.get("lead_saved"):
         send_message(
             chat_id,
             "Заявка уже зафиксирована. Специалист AIha свяжется с вами."
         )
         return
 
+    session["history"].append({
+        "role": "user",
+        "content": text,
+    })
+
+    history_text = build_history_text(session["history"])
+
+    if is_spam_lead(history_text):
+        send_message(
+            chat_id,
+            "Заявка отклонена автоматическим фильтром."
+        )
+        reset_session(chat_id, username)
+        return
+
+    contact = extract_contact(history_text)
+    client_name = extract_client_name(history_text, username)
+    business_ready = has_business_context(history_text)
+
     if contact:
         if business_ready:
             ai_result = get_ai_result_safe(session["history"])
         else:
             ai_result = make_default_ai_result(history_text)
+
         ai_result["lead_ready"] = True
         ai_result["client_name"] = ai_result.get("client_name") or client_name
         ai_result["contact"] = ai_result.get("contact") or contact
@@ -353,6 +355,12 @@ def handle_message(update):
 
     if business_ready and not contact:
         session["asked_contact"] = True
+
+        session["history"].append({
+            "role": "assistant",
+            "content": CONTACT_REQUEST_TEXT,
+        })
+
         send_message(chat_id, CONTACT_REQUEST_TEXT)
         return
 
@@ -398,7 +406,7 @@ def run_bot():
             data = response.json()
 
         except Exception as error:
-            print("Telegram polling error:", error)
+            print(f"Telegram polling error: {type(error).__name__}")
             continue
 
         for update in data.get("result", []):
