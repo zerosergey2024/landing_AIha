@@ -14,6 +14,14 @@ const callbackStatus = document.getElementById("callbackStatus");
 function openCallbackModal() {
   if (!callbackModal) return;
 
+  if (callbackStatus) {
+    callbackStatus.textContent = "";
+  }
+
+  if (callbackForm) {
+    callbackForm.reset();
+  }
+
   callbackModal.classList.add("is-open");
   callbackModal.setAttribute("aria-hidden", "false");
 }
@@ -21,6 +29,10 @@ function openCallbackModal() {
 
 function closeCallbackModal() {
   if (!callbackModal) return;
+
+  if (callbackStatus) {
+    callbackStatus.textContent = "";
+  }
 
   callbackModal.classList.remove("is-open");
   callbackModal.setAttribute("aria-hidden", "true");
