@@ -322,8 +322,11 @@ def handle_message(update):
         )
         return
 
-    if contact and business_ready:
-        ai_result = get_ai_result_safe(session["history"])
+    if contact:
+        if business_ready:
+            ai_result = get_ai_result_safe(session["history"])
+        else:
+            ai_result = make_default_ai_result(history_text)
         ai_result["lead_ready"] = True
         ai_result["client_name"] = ai_result.get("client_name") or client_name
         ai_result["contact"] = ai_result.get("contact") or contact
