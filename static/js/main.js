@@ -4,15 +4,28 @@ const headerCallback = document.getElementById("headerCallback");
 const callWidgetOpen = document.getElementById("callWidgetOpen");
 const modalClose = document.getElementById("modalClose");
 
+const leadForm = document.getElementById("leadForm");
+const formStatus = document.getElementById("formStatus");
+
+const callbackForm = document.getElementById("callbackForm");
+const callbackStatus = document.getElementById("callbackStatus");
+
+
 function openCallbackModal() {
+  if (!callbackModal) return;
+
   callbackModal.classList.add("is-open");
   callbackModal.setAttribute("aria-hidden", "false");
 }
 
+
 function closeCallbackModal() {
+  if (!callbackModal) return;
+
   callbackModal.classList.remove("is-open");
   callbackModal.setAttribute("aria-hidden", "true");
 }
+
 
 [callbackFloat, headerCallback, callWidgetOpen].forEach((button) => {
   if (button) {
@@ -20,93 +33,96 @@ function closeCallbackModal() {
   }
 });
 
+
 if (modalClose) {
   modalClose.addEventListener("click", closeCallbackModal);
 }
 
-modalOpeners.forEach((button) => {
-  button?.addEventListener('click', () => {
-    modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden', 'false');
+
+if (callbackModal) {
+  callbackModal.addEventListener("click", (event) => {
+    if (event.target === callbackModal) {
+      closeCallbackModal();
+    }
   });
-});
+}
 
-modalClose?.addEventListener('click', () => {
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden', 'true');
-});
 
-modal?.addEventListener('click', (event) => {
-  if (event.target === modal) {
-    modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-});
+async function submitForm(form, statusNode, endpoint, successMessage) {
+  if (!form) return;
 
-async function submitLead(form, statusNode) {
   const payload = Object.fromEntries(new FormData(form).entries());
-  statusNode.textContent = 'Отправляем заявку...';
+
+  if (statusNode) {
+    statusNode.textContent = "Отправляем...";
+  }
 
   try {
-    const response = await fetch('/api/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
     const result = await response.json();
+
     if (!response.ok || !result.ok) {
-      throw new Error(result.error || 'Не удалось отправить заявку.');
+      throw new Error(result.error || "Не удалось отправить заявку.");
     }
 
     form.reset();
-    statusNode.textContent = 'Готово. Заявка сохранена, менеджер свяжется с вами.';
+
+    if (statusNode) {
+      statusNode.textContent = successMessage;
+    }
+
+    return result;
   } catch (error) {
-    statusNode.textContent = error.message;
+    if (statusNode) {
+      statusNode.textContent = error.message || "Ошибка отправки.";
+    }
+
+    console.error("Form submit error:", error);
+    return null;
   }
 }
 
-document.querySelector('#leadForm')?.addEventListener('submit', (event) => {
-  event.preventDefault();
-  submitLead(event.currentTarget, document.querySelector('#formStatus'));
-});
 
-document.querySelector('#callbackForm')?.addEventListener('submit', (event) => {
-  event.preventDefault();
-  submitLead(event.currentTarget, document.querySelector('#callbackStatus'));
-});
+if (leadForm) {
+  leadForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-const callbackForm = document.getElementById("callbackForm");
-const callbackStatus = document.getElementById("callbackStatus");
+    await submitForm(
+      leadForm,
+      formStatus,
+      "/api/leads",
+      "Готово. Заявка сохранена, менеджер свяжется с вами."
+    );
+  });
+}
+
 
 if (callbackForm) {
   callbackForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const formData = new FormData(callbackForm);
+    const messageInput = callbackForm.querySelector('[name="message"]');
 
-    const payload = {
-      name: formData.get("name"),
-      phone: formData.get("phone"),
-      message: "Запрос обратного звонка",
-      source: "callback_widget"
-    };
-
-    const response = await fetch("/api/callback", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await response.json();
-
-    if (result.ok) {
-      callbackStatus.textContent = "Запрос отправлен.";
-      callbackForm.reset();
-    } else {
-      callbackStatus.textContent = result.error || "Ошибка отправки.";
+    if (!messageInput) {
+      const hiddenMessage = document.createElement("input");
+      hiddenMessage.type = "hidden";
+      hiddenMessage.name = "message";
+      hiddenMessage.value = "Запрос обратного звонка";
+      callbackForm.appendChild(hiddenMessage);
     }
+
+    await submitForm(
+      callbackForm,
+      callbackStatus,
+      "/api/callback",
+      "Запрос отправлен."
+    );
   });
 }
