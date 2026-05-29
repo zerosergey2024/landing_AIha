@@ -3,6 +3,7 @@ import re
 import time
 import sqlite3
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,11 +33,16 @@ API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 # ============================================================
 # In-memory session storage
 #
-# Для MVP это нормально.
-# Для масштабирования лучше перенести сессии в Redis или SQLite.
+# Для MVP нормально.
+# Для production scale лучше Redis или SQLite session table.
 # ============================================================
 
 user_sessions = {}
+
+# Пул потоков для обработки Telegram updates.
+# Это важно: если один update ушёл в Phi-4, остальные сообщения,
+# включая /start, не должны ждать его завершения.
+executor = ThreadPoolExecutor(max_workers=4)
 
 
 # ============================================================
@@ -66,6 +72,12 @@ LEAD_SAVED_TEXT_TEMPLATE = (
     "Специалист AIha свяжется с вами для уточнения деталей."
 )
 
+LEAD_ALREADY_EXISTS_TEXT_TEMPLATE = (
+    "Ваша заявка уже зафиксирована.\n\n"
+    "Номер заявки: {lead_id}\n"
+    "Специалист AIha свяжется с вами."
+)
+
 ALREADY_SAVED_TEXT = (
     "Заявка уже зафиксирована. Специалист AIha свяжется с вами."
 )
@@ -82,8 +94,8 @@ SPAM_REJECT_TEXT = "Заявка отклонена автоматическим
 # ============================================================
 # Spam rules
 #
-# Это быстрый deterministic-фильтр.
-# Его задача — не идеальная классификация, а отсечение очевидного мусора.
+# Быстрый deterministic filter.
+# Phi-4 сюда не подключаем.
 # ============================================================
 
 SPAM_PATTERNS = [
@@ -112,9 +124,7 @@ SPAM_COMPANIES = [
 
 def now_utc():
     """
-    Returns ISO timestamp in UTC.
-
-    Храним время в UTC, чтобы не зависеть от timezone сервера.
+    UTC timestamp in ISO format.
     """
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -123,18 +133,18 @@ def log_event(event_name, **kwargs):
     """
     Simple structured logging.
 
-    Потом это можно заменить на logging / Sentry / JSON logs.
+    Потом можно заменить на logging/Sentry/JSON logs.
     """
     payload = " ".join(f"{key}={value}" for key, value in kwargs.items())
-    print(f"[{now_utc()}] {event_name} {payload}".strip())
+    print(f"[{now_utc()}] {event_name} {payload}".strip(), flush=True)
 
 
 def init_db_runtime():
     """
     SQLite runtime settings.
 
-    WAL снижает вероятность lock-проблем, когда основной поток сохраняет лид,
-    а background thread позже обновляет AI enrichment.
+    WAL нужен, потому что основной поток сохраняет лид,
+    а background thread может позже обновлять AI enrichment.
     """
     with sqlite3.connect(DB_PATH, timeout=10) as conn:
         conn.execute("PRAGMA journal_mode=WAL;")
@@ -144,8 +154,6 @@ def init_db_runtime():
 def is_spam_lead(text):
     """
     Fast spam filter.
-
-    Phi-4 сюда не подключаем: спам должен отсекаться быстро и дешево.
     """
     lower = text.lower()
 
@@ -166,10 +174,10 @@ def is_spam_lead(text):
 
 def extract_phone(text):
     """
-    Extracts phone-like strings.
+    Extract phone-like strings.
 
-    Regex достаточно простой, но покрывает:
-    +49 123 456...
+    Covers:
+    +7 999 123 45 67
     +7 (999) 123-45-67
     89991234567
     """
@@ -179,7 +187,7 @@ def extract_phone(text):
 
 def extract_email(text):
     """
-    Extracts email from text.
+    Extract email.
     """
     match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
     return match.group(0) if match else ""
@@ -187,7 +195,7 @@ def extract_email(text):
 
 def extract_telegram(text):
     """
-    Extracts Telegram handle.
+    Extract Telegram handle.
     """
     match = re.search(r"@\w+", text)
     return match.group(0) if match else ""
@@ -195,10 +203,10 @@ def extract_telegram(text):
 
 def extract_contact(text):
     """
-    Returns all contacts found in the text as a single string.
+    Extract all available contact data.
 
-    В CRM сейчас поле phone используется как contact field.
-    Поэтому туда складываем phone/email/telegram.
+    В текущей CRM поле phone фактически используется как contact field,
+    поэтому туда кладём phone/email/telegram.
     """
     contacts = []
 
@@ -220,10 +228,9 @@ def extract_contact(text):
 
 def extract_client_name(text, telegram_username=""):
     """
-    Tries to extract a human-looking client name.
+    Heuristic name extraction.
 
-    Это heuristic, не критичная бизнес-логика.
-    Если не нашли имя — используем Telegram username / first_name.
+    Не критичная логика: если имя не нашли, используем Telegram username.
     """
     lines = [line.strip() for line in text.splitlines() if line.strip()]
 
@@ -264,20 +271,21 @@ def extract_client_name(text, telegram_username=""):
 
 
 # ============================================================
-# Intent / business context detection
+# Business context / intent heuristics
 # ============================================================
 
 def has_business_context(text):
     """
-    Deterministic business-context detector.
+    Deterministic business context detector.
 
-    Если видим явный бизнес-контекст, не зовем Phi-4 в real-time path.
+    Если бизнес-контекст понятен, не зовём Phi-4 в real-time path.
     Просто просим контакт.
     """
     lower = text.lower()
 
     signals = [
         "автоматиз",
+        "автоматизация",
         "заказ",
         "заявк",
         "доставк",
@@ -297,10 +305,12 @@ def has_business_context(text):
         "логистик",
         "клиент",
         "бот",
+        "чат-бот",
         "телефон",
         "рутин",
         "процесс",
         "crm",
+        "срм",
         "лид",
         "продаж",
         "менеджер",
@@ -316,6 +326,7 @@ def has_business_context(text):
         "сайт",
         "лендинг",
         "форма",
+        "callback",
         "колл",
         "call",
         "оператор",
@@ -327,9 +338,9 @@ def has_business_context(text):
 
 def has_unclear_start_marker(text):
     """
-    Detects phrases that often indicate a non-standard but potentially valid lead.
+    Markers of non-standard but potentially valid lead start.
 
-    Пример:
+    Примеры:
     - "Можно вопрос?"
     - "Сколько стоит?"
     - "У нас есть задача..."
@@ -366,9 +377,13 @@ def has_unclear_start_marker(text):
     return any(marker in lower for marker in unclear_markers)
 
 
+# ============================================================
+# History helpers
+# ============================================================
+
 def build_history_text(history):
     """
-    Converts structured session history into plain text.
+    Convert structured history into plain text.
     """
     return "\n".join(
         f"{item['role']}: {item['content']}"
@@ -378,19 +393,18 @@ def build_history_text(history):
 
 def trim_history(history, max_messages=8):
     """
-    Keeps only last messages for Phi-4.
+    Keep only the last messages for Phi-4.
 
-    Это снижает latency и уменьшает риск длинного контекста.
+    Это снижает latency и защищает от длинного контекста.
     """
     return history[-max_messages:]
 
 
 def make_default_ai_result(history_text):
     """
-    Default enrichment structure.
+    Default structure for fast lead save.
 
-    Используется для быстрого сохранения лида без ожидания Phi-4.
-    Потом Phi-4 может обновить эти поля в фоне.
+    Используется до Phi-4, чтобы не задерживать клиента.
     """
     return {
         "industry": "Бизнес-процессы",
@@ -410,11 +424,10 @@ def should_use_ai_for_reply(session, history_text):
     """
     Controlled Phi-4 fallback.
 
-    Ключевая идея:
-    - Phi-4 НЕ нужен после контакта перед ответом клиенту.
-    - Phi-4 НЕ нужен, если бизнес-контекст уже понятен: сразу просим контакт.
-    - Phi-4 НУЖЕН, если клиент начал нестандартно и deterministic-логика
-      может зациклиться.
+    Правила:
+    - После контакта Phi-4 нельзя вызывать до ответа клиенту.
+    - Если бизнес-контекст понятен, Phi-4 не нужен: просим контакт.
+    - Если клиент начал нестандартно, Phi-4 нужен, чтобы бот не зацикливался.
     """
     history = session.get("history", [])
     unclear_count = session.get("unclear_count", 0)
@@ -431,37 +444,33 @@ def should_use_ai_for_reply(session, history_text):
     if not last_user_message:
         return False
 
-    # Если уже есть контакт, real-time Phi-4 запрещен.
-    # Сначала сохраняем лид и отвечаем.
+    # Если контакт уже есть, real-time Phi-4 запрещён.
     if extract_contact(history_text):
         return False
 
-    # Если бизнес-контекст понятен, не зовем Phi-4:
-    # быстрее и надежнее попросить контакт.
+    # Если бизнес-задача понятна, просим контакт без Phi-4.
     if has_business_context(history_text):
         return False
 
-    # Совсем короткие сообщения не стоит отправлять в модель.
-    # Например: "да", "ок", "привет".
+    # Слишком короткие сообщения не отправляем в модель.
     if len(last_user_message) < 8:
         return False
 
-    # Anti-loop:
-    # если мы уже один раз дали deterministic fallback, но клиент продолжает,
-    # подключаем Phi-4, чтобы бот не повторял одно и то же.
+    # Anti-loop: если уже был deterministic fallback,
+    # следующий непонятный ответ отправляем в Phi-4.
     if unclear_count >= 1:
         return True
 
-    # Если клиент уже написал 2+ сообщений, а контекст всё ещё не распознан,
-    # лучше подключить Phi-4.
+    # Если пользователь написал 2+ сообщения, а мы всё ещё не поняли контекст,
+    # подключаем Phi-4.
     if len(user_messages) >= 2:
         return True
 
-    # Длинное сообщение может быть нестандартным описанием задачи без явных keywords.
+    # Длинное сообщение может быть описанием задачи без явных keywords.
     if len(last_user_message) >= 80:
         return True
 
-    # Нестандартный старт с коммерческими / консультационными маркерами.
+    # Коммерческий/консультационный нестандартный старт.
     if has_unclear_start_marker(last_user_message):
         return True
 
@@ -474,10 +483,10 @@ def should_use_ai_for_reply(session, history_text):
 
 def send_message(chat_id, text):
     """
-    Sends Telegram message.
-
-    Возвращает True/False, чтобы при необходимости можно было логировать delivery.
+    Send Telegram message.
     """
+    started_at = time.perf_counter()
+
     try:
         response = requests.post(
             f"{API_URL}/sendMessage",
@@ -486,14 +495,25 @@ def send_message(chat_id, text):
                 "text": text,
                 "disable_web_page_preview": True,
             },
-            timeout=10,
+            timeout=(5, 20),
         )
         response.raise_for_status()
+
+        elapsed = time.perf_counter() - started_at
+        log_event(
+            "telegram_send_success",
+            chat_id=chat_id,
+            latency=f"{elapsed:.2f}s",
+        )
+
         return True
 
     except requests.RequestException as error:
+        elapsed = time.perf_counter() - started_at
         log_event(
             "telegram_send_error",
+            chat_id=chat_id,
+            latency=f"{elapsed:.2f}s",
             error_type=type(error).__name__,
             error=str(error),
         )
@@ -504,7 +524,7 @@ def send_typing(chat_id):
     """
     Shows Telegram typing indicator.
 
-    Это важно для UX, если Phi-4 всё-таки подключается в pre-contact path.
+    Используется только перед потенциально долгим Phi-4 вызовом.
     """
     try:
         requests.post(
@@ -513,7 +533,7 @@ def send_typing(chat_id):
                 "chat_id": chat_id,
                 "action": "typing",
             },
-            timeout=5,
+            timeout=(5, 10),
         )
     except requests.RequestException:
         pass
@@ -525,7 +545,7 @@ def send_typing(chat_id):
 
 def reset_session(chat_id, username):
     """
-    Resets user session.
+    Reset session.
 
     unclear_count нужен для anti-loop логики.
     """
@@ -541,7 +561,7 @@ def reset_session(chat_id, username):
 
 def get_or_create_session(chat_id, username):
     """
-    Gets existing session or creates a new one.
+    Get existing session or create a new one.
     """
     session = user_sessions.get(chat_id)
 
@@ -559,10 +579,7 @@ def get_or_create_session(chat_id, username):
 
 def cleanup_old_sessions(max_age_seconds=24 * 60 * 60):
     """
-    Removes stale sessions to prevent memory growth.
-
-    For MVP: run once per polling loop.
-    For bigger load: run on interval, not every loop.
+    Remove stale sessions.
     """
     now = time.time()
 
@@ -583,14 +600,45 @@ def cleanup_old_sessions(max_age_seconds=24 * 60 * 60):
 # Database operations
 # ============================================================
 
+def find_recent_lead_by_contact(contact, hours=24):
+    """
+    Prevent duplicate Telegram leads from the same contact.
+
+    Это защищает от дублей после рестарта бота,
+    потому что user_sessions хранится только в памяти.
+    """
+    if not contact:
+        return None
+
+    with sqlite3.connect(DB_PATH, timeout=10) as conn:
+        cursor = conn.execute(
+            """
+            SELECT id
+            FROM leads
+            WHERE phone = ?
+              AND source = 'telegram'
+              AND datetime(created_at) >= datetime('now', ?)
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (
+                contact,
+                f"-{hours} hours",
+            ),
+        )
+
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+
 def save_telegram_lead(chat_id, username, history, ai_result):
     """
     Fast lead save.
 
     Важно:
-    - Здесь НЕЛЬЗЯ вызывать Phi-4.
-    - Эта функция должна быть быстрой.
-    - AI enrichment выполняется позже отдельным background job.
+    - здесь НЕЛЬЗЯ вызывать Phi-4;
+    - функция должна быстро сохранить лид;
+    - AI enrichment выполняется позже.
     """
     created_at = now_utc()
     history_text = build_history_text(history)
@@ -655,9 +703,10 @@ def save_telegram_lead(chat_id, username, history, ai_result):
 
 def update_lead_ai_enrichment(lead_id, ai_result):
     """
-    Updates lead with Phi-4 enrichment.
+    Update lead with Phi-4 enrichment.
 
-    Эта функция вызывается после того, как клиент уже получил ответ.
+    В твоей таблице есть явная колонка id,
+    поэтому используем WHERE id = ?, а не rowid.
     """
     updated_at = now_utc()
 
@@ -706,12 +755,10 @@ def update_lead_ai_enrichment(lead_id, ai_result):
 
 def get_ai_result_safe(history):
     """
-    Safe Phi-4 call wrapper.
+    Safe Phi-4 wrapper.
 
-    Важно:
-    - может быть медленным;
-    - не должен использоваться в post-contact blocking path;
-    - используем trim_history(), чтобы снизить latency.
+    Может быть медленным.
+    Не использовать в blocking post-contact path.
     """
     compact_history = trim_history(history)
     started_at = time.perf_counter()
@@ -749,10 +796,11 @@ def enrich_lead_in_background(lead_id, history):
     """
     Background Phi-4 enrichment.
 
-    Используется после сохранения лида:
-    1. клиент уже получил номер заявки;
-    2. Phi-4 спокойно делает summary/scoring/enrichment;
-    3. CRM обновляется позже.
+    Flow:
+    1. lead already saved;
+    2. client already received confirmation;
+    3. Phi-4 enriches lead;
+    4. CRM row is updated.
     """
     history_copy = [item.copy() for item in history]
 
@@ -786,25 +834,19 @@ def enrich_lead_in_background(lead_id, history):
 
 def build_ai_reply_from_result(ai_result, history_text):
     """
-    Normalizes Phi-4 response for pre-contact conversation.
+    Normalize Phi-4 result into a short user-facing reply.
 
-    Phi-4 может вернуть:
-    - reply;
-    - lead_ready;
-    - summary;
-    - intent fields.
-
-    Но пользователю нужен короткий следующий шаг, а не длинный анализ.
+    Phi-4 может вернуть reply/lead_ready/summary.
+    Пользователю нужен короткий следующий шаг.
     """
     ai_reply = ai_result.get("reply", "")
     ai_reply = ai_reply.strip() if isinstance(ai_reply, str) else ""
 
     # Если модель решила, что лид готов, но контакта нет,
-    # не продолжаем беседу бесконечно — просим контакт.
+    # просим контакт, а не продолжаем бесконечную беседу.
     if ai_result.get("lead_ready") and not extract_contact(history_text):
         return CONTACT_REQUEST_TEXT
 
-    # Защита от пустого или слишком длинного ответа.
     if not ai_reply or len(ai_reply) > 600:
         return (
             "Понял. Чтобы точнее оценить задачу, уточните, пожалуйста: "
@@ -822,18 +864,18 @@ def handle_message(update):
     """
     Main Telegram update handler.
 
-    Core architecture:
-    1. /start and /reset handled immediately.
-    2. Spam handled immediately.
+    Architecture:
+    1. /start and /reset are instant.
+    2. Spam is filtered instantly.
     3. If contact exists:
        - save lead immediately;
        - reply immediately;
-       - run AI enrichment in background.
+       - run Phi-4 enrichment in background.
     4. If business context exists but no contact:
-       - ask contact immediately.
-    5. If unclear / non-standard:
+       - ask for contact immediately.
+    5. If unclear/non-standard:
        - first deterministic fallback;
-       - then Phi-4 controlled fallback to avoid loops.
+       - then Phi-4 controlled fallback.
     """
     message = update.get("message", {})
     chat = message.get("chat", {})
@@ -846,11 +888,19 @@ def handle_message(update):
     if not chat_id or not text:
         return
 
+    log_event(
+        "message_received",
+        chat_id=chat_id,
+        text=text[:40].replace(" ", "_"),
+    )
+
+    # /reset must be instant.
     if text == "/reset":
         reset_session(chat_id, username)
         send_message(chat_id, RESET_TEXT)
         return
 
+    # /start and /lead must be instant.
     if text in ["/start", "/lead"]:
         reset_session(chat_id, username)
         send_message(chat_id, START_TEXT)
@@ -888,10 +938,24 @@ def handle_message(update):
     # --------------------------------------------------------
     # 2. Fast path: contact found
     #
-    # This is the most important production branch.
-    # No Phi-4 call before responding to the user.
+    # Самый важный production branch.
+    # Не вызываем Phi-4 до ответа клиенту.
     # --------------------------------------------------------
     if contact:
+        existing_lead_id = find_recent_lead_by_contact(contact)
+
+        if existing_lead_id:
+            session["lead_saved"] = True
+            session["updated_at"] = time.time()
+
+            send_message(
+                chat_id,
+                LEAD_ALREADY_EXISTS_TEXT_TEMPLATE.format(
+                    lead_id=existing_lead_id,
+                ),
+            )
+            return
+
         ai_result = make_default_ai_result(history_text)
         ai_result["lead_ready"] = True
         ai_result["client_name"] = client_name
@@ -908,13 +972,13 @@ def handle_message(update):
         session["lead_saved"] = True
         session["updated_at"] = time.time()
 
-        # Client gets response immediately.
+        # Клиент получает ответ сразу.
         send_message(
             chat_id,
             LEAD_SAVED_TEXT_TEMPLATE.format(lead_id=lead_id),
         )
 
-        # AI enrichment happens after the client-facing response.
+        # AI enrichment запускается после ответа клиенту.
         enrich_lead_in_background(
             lead_id=lead_id,
             history=session["history"],
@@ -925,7 +989,7 @@ def handle_message(update):
     # --------------------------------------------------------
     # 3. Clear business context, but no contact
     #
-    # No Phi-4 needed. Ask for contact immediately.
+    # Phi-4 не нужен. Быстро просим контакт.
     # --------------------------------------------------------
     if business_ready and not contact:
         session["asked_contact"] = True
@@ -945,11 +1009,7 @@ def handle_message(update):
     # --------------------------------------------------------
     # 4. Unclear / non-standard path
     #
-    # Here we decide whether to use Phi-4.
-    # This prevents loops like:
-    # bot: "describe process"
-    # user: "can you help?"
-    # bot: "describe process"
+    # Здесь Phi-4 разрешён, чтобы бот не зацикливался.
     # --------------------------------------------------------
     if should_use_ai_for_reply(session, history_text):
         send_typing(chat_id)
@@ -972,8 +1032,8 @@ def handle_message(update):
     # --------------------------------------------------------
     # 5. First deterministic fallback
     #
-    # This is intentionally cheap and fast.
-    # If the user continues after this, unclear_count triggers Phi-4.
+    # Дешёвый и быстрый ответ.
+    # Если пользователь продолжит, unclear_count подключит Phi-4.
     # --------------------------------------------------------
     session["unclear_count"] = session.get("unclear_count", 0) + 1
     session["updated_at"] = time.time()
@@ -988,6 +1048,23 @@ def handle_message(update):
     send_message(chat_id, NON_TARGET_TEXT)
 
 
+def handle_update_safe(update):
+    """
+    Wrapper for ThreadPoolExecutor.
+
+    Нужен, чтобы исключение в одном update не убило polling loop.
+    """
+    try:
+        handle_message(update)
+
+    except Exception as error:
+        log_event(
+            "handle_message_error",
+            error_type=type(error).__name__,
+            error=str(error),
+        )
+
+
 # ============================================================
 # Polling loop
 # ============================================================
@@ -996,8 +1073,10 @@ def run_bot():
     """
     Telegram long polling loop.
 
-    For MVP it is OK.
-    For higher load consider webhook + queue.
+    Важные детали:
+    - getUpdates только получает updates;
+    - сами updates отправляются в ThreadPoolExecutor;
+    - один долгий Phi-4 вызов не блокирует /start и другие сообщения.
     """
     offset = None
 
@@ -1011,13 +1090,14 @@ def run_bot():
         params = {
             "timeout": 5,
             "offset": offset,
+            "allowed_updates": ["message"],
         }
 
         try:
             response = requests.get(
                 f"{API_URL}/getUpdates",
                 params=params,
-                timeout=10,
+                timeout=(5, 20),
             )
 
             response.raise_for_status()
@@ -1029,21 +1109,14 @@ def run_bot():
                 error_type=type(error).__name__,
                 error=str(error),
             )
-            time.sleep(2)
+
+            # Важно: без паузы бот может заспамить логи timeout-ами.
+            time.sleep(5)
             continue
 
         for update in data.get("result", []):
             offset = update["update_id"] + 1
-
-            try:
-                handle_message(update)
-
-            except Exception as error:
-                log_event(
-                    "handle_message_error",
-                    error_type=type(error).__name__,
-                    error=str(error),
-                )
+            executor.submit(handle_update_safe, update)
 
 
 if __name__ == "__main__":
