@@ -428,7 +428,7 @@ def run_bot() -> None:
             data = response.json()
 
         except Exception as error:
-            print(f"Telegram polling error: {type(error).__name__}")
+            print(f"[{now_utc()}] telegram_polling_error error_type={type(error).__name__}")
             continue
 
         for update in data.get("result", []):
