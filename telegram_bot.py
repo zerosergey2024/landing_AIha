@@ -157,6 +157,13 @@ def has_business_context(text: str) -> bool:
         "отчёт",
         "регламент",
         "диспетчер",
+        "oee",
+        "простои",
+        "простой",
+        "станк",
+        "участок",
+        "готового питания",
+        "цветы",
     ]
 
     return any(signal in text for signal in signals)
@@ -176,7 +183,12 @@ def is_greeting(text: str) -> bool:
         "hi",
     ]
 
-    return normalized in greetings
+    return any(
+        normalized == greeting
+        or normalized.startswith(greeting + ",")
+        or normalized.startswith(greeting + " ")
+        for greeting in greetings
+    )
 
 def build_history_text(history: list[dict]) -> str:
     return "\n".join(
@@ -324,6 +336,23 @@ def handle_message(update) -> None:
 
     if is_greeting(text):
         reset_session(chat_id, username)
+        session = user_sessions[chat_id]
+
+        session["history"].append({
+            "role": "user",
+            "content": text,
+        })
+
+        if has_business_context(text):
+            session["asked_contact"] = True
+
+            session["history"].append({
+                "role": "assistant",
+                "content": CONTACT_REQUEST_TEXT,
+            })
+
+            send_message(chat_id, CONTACT_REQUEST_TEXT)
+            return
 
         send_message(
             chat_id,
