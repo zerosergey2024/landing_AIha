@@ -161,6 +161,22 @@ def has_business_context(text: str) -> bool:
 
     return any(signal in text for signal in signals)
 
+def is_greeting(text: str) -> bool:
+    normalized = text.lower().strip()
+
+    greetings = [
+        "привет",
+        "пивет",
+        "здравствуйте",
+        "здравствуй",
+        "добрый день",
+        "доброе утро",
+        "добрый вечер",
+        "hello",
+        "hi",
+    ]
+
+    return normalized in greetings
 
 def build_history_text(history: list[dict]) -> str:
     return "\n".join(
@@ -303,6 +319,17 @@ def handle_message(update) -> None:
             "Здравствуйте. Это AIha Студия.\n\n"
             "Мы помогаем автоматизировать рутинные процессы бизнеса: заявки, заказы, HR, документы, производство, логистику и клиентский сервис.\n\n"
             "Опишите коротко, какой процесс хотите автоматизировать.",
+        )
+        return
+
+    if is_greeting(text):
+        reset_session(chat_id, username)
+
+        send_message(
+            chat_id,
+            "Здравствуйте. Это AIha Студия.\n\n"
+            "Мы помогаем автоматизировать рутинные бизнес-процессы: заявки, заказы, HR, документы, производство, логистику и клиентский сервис.\n\n"
+            "Опишите коротко, какой процесс хотите автоматизировать."
         )
         return
 
