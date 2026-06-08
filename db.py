@@ -84,5 +84,31 @@ def init_db() -> None:
             )
             """
         )
-
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS agent_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_code TEXT NOT NULL,
+                lead_id INTEGER NOT NULL,
+                company TEXT,
+                agent_type TEXT,
+                stage TEXT,
+                task_title TEXT NOT NULL,
+                input_source TEXT,
+                expected_output TEXT,
+                status TEXT DEFAULT 'New',
+                priority TEXT DEFAULT 'Средний',
+                owner TEXT,
+                human_required TEXT DEFAULT 'Нет',
+                result TEXT,
+                next_action TEXT,
+                due_date TEXT,
+                comment TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (lead_id) REFERENCES leads(id)
+            )
+            """
+        )
+        
         conn.commit()

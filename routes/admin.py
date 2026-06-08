@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from services.intake_blocks import build_intake_v33_input_block, get_lead_with_constraints
 from flask import Blueprint, jsonify, redirect, render_template, request, session
 import os
 import sqlite3
@@ -211,6 +211,34 @@ def admin_lead_detail(lead_id: int):
             """,
             (lead_id,),
         ).fetchone()
+        tasks = conn.execute(
+            """
+            SELECT
+                id,
+                task_code,
+                lead_id,
+                company,
+                agent_type,
+                stage,
+                task_title,
+                input_source,
+                expected_output,
+                status,
+                priority,
+                owner,
+                human_required,
+                result,
+                next_action,
+                due_date,
+                comment,
+                created_at,
+                updated_at
+            FROM agent_tasks
+            WHERE lead_id = ?
+            ORDER BY id ASC
+            """,
+            (lead_id,),
+        ).fetchall()
 
     if lead is None:
         return "Заявка не найдена", 404
@@ -219,7 +247,26 @@ def admin_lead_detail(lead_id: int):
         "admin_lead_detail.html",
         lead=lead,
         constraints=constraints,
+        tasks=tasks,
         statuses=LEAD_STATUSES,
+    )
+
+@admin_bp.get("/leads/<int:lead_id>/intake-input")
+def admin_lead_intake_input(lead_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    lead, constraints = get_lead_with_constraints(lead_id)
+
+    if lead is None:
+        return "Заявка не найдена", 404
+
+    input_block = build_intake_v33_input_block(lead, constraints)
+
+    return render_template(
+        "admin_intake_input.html",
+        lead=lead,
+        input_block=input_block,
     )
 
 

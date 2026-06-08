@@ -28,11 +28,13 @@
             border: 1px solid #334;
             padding: 24px;
             margin-bottom: 24px;
+            border-radius: 14px;
         }
 
         .meta {
             color: #9fb3d9;
             margin-bottom: 12px;
+            line-height: 1.6;
         }
 
         .grid {
@@ -45,6 +47,7 @@
             background: #0f172b;
             padding: 14px;
             border: 1px solid #2c3550;
+            border-radius: 10px;
         }
 
         .field strong {
@@ -60,6 +63,7 @@
             background: #0f172b;
             color: white;
             border: 1px solid #334;
+            border-radius: 10px;
         }
 
         textarea {
@@ -74,42 +78,115 @@
             background: #2272ff;
             color: white;
             font-weight: bold;
+            border-radius: 10px;
         }
 
         .message {
             white-space: pre-wrap;
             line-height: 1.5;
         }
-    .constraints-block {
-    margin-top: 24px;
-    padding: 20px;
-    border: 1px solid #334;
-    background: #121a30;
-    border-radius: 14px;
-}
 
-.constraints-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-}
+        .constraints-block {
+            margin-top: 24px;
+            margin-bottom: 24px;
+            padding: 20px;
+            border: 1px solid #334;
+            background: #121a30;
+            border-radius: 14px;
+        }
 
-.constraints-grid div {
-    background: #0f172b;
-    border: 1px solid #2c3550;
-    padding: 14px;
-    border-radius: 10px;
-}
+        .constraints-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
 
-.constraints-grid strong {
-    color: #8fd8ff;
-}
+        .constraints-grid div {
+            background: #0f172b;
+            border: 1px solid #2c3550;
+            padding: 14px;
+            border-radius: 10px;
+        }
 
-.constraints-grid p {
-    margin: 8px 0 0;
-    color: #d9e4ff;
-    white-space: pre-wrap;
-}
+        .constraints-grid strong {
+            color: #8fd8ff;
+        }
+
+        .constraints-grid p {
+            margin: 8px 0 0;
+            color: #d9e4ff;
+            white-space: pre-wrap;
+        }
+
+        .tasks-block {
+            margin-top: 24px;
+            margin-bottom: 24px;
+            padding: 20px;
+            border: 1px solid #334;
+            background: #121a30;
+            border-radius: 14px;
+        }
+
+        .tasks-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .task-card {
+            background: #0f172b;
+            border: 1px solid #2c3550;
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        .task-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .task-head strong {
+            color: #8fd8ff;
+            font-size: 18px;
+        }
+
+        .task-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #174e3a;
+            color: #9ff5cc;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .task-card p {
+            margin: 10px 0;
+            color: #d9e4ff;
+            white-space: pre-wrap;
+        }
+
+        .task-card strong {
+            color: #8fd8ff;
+        }
+
+        .task-meta {
+            color: #9fb3d9 !important;
+            font-size: 13px;
+        }
+
+        @media (max-width: 760px) {
+            .grid,
+            .constraints-grid {
+                grid-template-columns: 1fr;
+            }
+
+            body {
+                margin: 18px;
+            }
+        }
     </style>
 </head>
 
@@ -126,18 +203,24 @@
         Обновлено: {{ lead.updated_at }}
     </div>
 
+    <p>
+        <a href="/admin/leads/{{ lead.id }}/intake-input">
+            Сформировать input для Intake Agent v3.3
+        </a>
+    </p>
+
     <div class="card">
         <h2>Контакт</h2>
 
         <div class="grid">
             <div class="field">
                 <strong>Имя</strong>
-                {{ lead.name }}
+                {{ lead.name or "Не указано" }}
             </div>
 
             <div class="field">
                 <strong>Телефон</strong>
-                {{ lead.phone }}
+                {{ lead.phone or "Не указано" }}
             </div>
 
             <div class="field">
@@ -147,14 +230,14 @@
 
             <div class="field">
                 <strong>Статус</strong>
-                {{ lead.status }}
+                {{ lead.status or "Не указано" }}
             </div>
         </div>
     </div>
 
     <div class="card">
         <h2>Задача</h2>
-        <div class="message">{{ lead.message }}</div>
+        <div class="message">{{ lead.message or "Не указано" }}</div>
     </div>
 
     <div class="card">
@@ -163,118 +246,200 @@
         <div class="grid">
             <div class="field">
                 <strong>Отрасль</strong>
-                {{ lead.industry }}
+                {{ lead.industry or "Не определено" }}
             </div>
 
             <div class="field">
                 <strong>Процесс</strong>
-                {{ lead.process }}
+                {{ lead.process or "Не определено" }}
             </div>
 
             <div class="field">
                 <strong>AI-сценарий</strong>
-                {{ lead.ai_type }}
+                {{ lead.ai_type or "Не определено" }}
             </div>
 
             <div class="field">
                 <strong>Эффект</strong>
-                {{ lead.effect }}
+                {{ lead.effect or "Не определено" }}
             </div>
 
             <div class="field">
                 <strong>Приоритет</strong>
-                {{ lead.priority }}
+                {{ lead.priority or "Не определено" }}
             </div>
         </div>
     </div>
 
-{% if constraints %}
-    <section class="constraints-block">
-        <h2>Client Constraints</h2>
+    {% if constraints %}
+        <section class="constraints-block">
+            <h2>Client Constraints</h2>
 
-        <div class="constraints-grid">
-            <div>
-                <strong>Персональные данные:</strong>
-                <p>{{ constraints.has_personal_data or "не указано" }}</p>
-            </div>
+            <div class="constraints-grid">
+                <div>
+                    <strong>Персональные данные:</strong>
+                    <p>{{ constraints.has_personal_data or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Типы ПДн:</strong>
-                <p>{{ constraints.personal_data_types or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Типы ПДн:</strong>
+                    <p>{{ constraints.personal_data_types or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Можно обезличить:</strong>
-                <p>{{ constraints.can_anonymize or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Можно обезличить:</strong>
+                    <p>{{ constraints.can_anonymize or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Облако допустимо:</strong>
-                <p>{{ constraints.cloud_allowed or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Облако допустимо:</strong>
+                    <p>{{ constraints.cloud_allowed or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Локализация:</strong>
-                <p>{{ constraints.localization_requirements or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Локализация:</strong>
+                    <p>{{ constraints.localization_requirements or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Политики ИБ:</strong>
-                <p>{{ constraints.security_policies or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Политики ИБ:</strong>
+                    <p>{{ constraints.security_policies or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>NDA:</strong>
-                <p>{{ constraints.nda_required or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>NDA:</strong>
+                    <p>{{ constraints.nda_required or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>ROI-метрики:</strong>
-                <p>{{ constraints.roi_metrics_available or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>ROI-метрики:</strong>
+                    <p>{{ constraints.roi_metrics_available or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Какие метрики есть:</strong>
-                <p>{{ constraints.roi_metrics_details or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Какие метрики есть:</strong>
+                    <p>{{ constraints.roi_metrics_details or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Бюджет:</strong>
-                <p>{{ constraints.budget_known or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Бюджет:</strong>
+                    <p>{{ constraints.budget_known or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Готовность к MVP:</strong>
-                <p>{{ constraints.mvp_readiness or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Готовность к MVP:</strong>
+                    <p>{{ constraints.mvp_readiness or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Ограничения scope:</strong>
-                <p>{{ constraints.scope_limitations or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Ограничения scope:</strong>
+                    <p>{{ constraints.scope_limitations or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Риск ограничений:</strong>
-                <p>{{ constraints.constraint_risk or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Риск ограничений:</strong>
+                    <p>{{ constraints.constraint_risk or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Следующее действие:</strong>
-                <p>{{ constraints.next_action or "не указано" }}</p>
-            </div>
+                <div>
+                    <strong>Следующее действие:</strong>
+                    <p>{{ constraints.next_action or "не указано" }}</p>
+                </div>
 
-            <div>
-                <strong>Комментарий:</strong>
-                <p>{{ constraints.comment or "не указано" }}</p>
+                <div>
+                    <strong>Комментарий:</strong>
+                    <p>{{ constraints.comment or "не указано" }}</p>
+                </div>
             </div>
-        </div>
-    </section>
-{% else %}
-    <section class="constraints-block">
-        <h2>Client Constraints</h2>
-        <p>Для этой заявки ограничения клиента не заполнены.</p>
-    </section>
-{% endif %}
+        </section>
+    {% else %}
+        <section class="constraints-block">
+            <h2>Client Constraints</h2>
+            <p>Для этой заявки ограничения клиента не заполнены.</p>
+        </section>
+    {% endif %}
+
+    {% if tasks %}
+        <section class="tasks-block">
+            <h2>Agent Tasks</h2>
+
+            <div class="tasks-list">
+                {% for task in tasks %}
+                    <div class="task-card">
+                        <div class="task-head">
+                            <strong>{{ task.task_code }}</strong>
+                            <span class="task-status">{{ task.status or "не указано" }}</span>
+                        </div>
+
+                        <p>
+                            <strong>Agent / Role:</strong>
+                            {{ task.agent_type or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Stage:</strong>
+                            {{ task.stage or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Task:</strong><br>
+                            {{ task.task_title or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Input source:</strong><br>
+                            {{ task.input_source or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Expected output:</strong><br>
+                            {{ task.expected_output or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Priority:</strong>
+                            {{ task.priority or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Owner:</strong>
+                            {{ task.owner or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Human required:</strong>
+                            {{ task.human_required or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Next action:</strong><br>
+                            {{ task.next_action or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Result:</strong><br>
+                            {{ task.result or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Comment:</strong><br>
+                            {{ task.comment or "не указано" }}
+                        </p>
+
+                        <p class="task-meta">
+                            Created: {{ task.created_at }} |
+                            Updated: {{ task.updated_at }}
+                        </p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <section class="tasks-block">
+            <h2>Agent Tasks</h2>
+            <p>Для этой заявки задачи агентов пока не созданы.</p>
+        </section>
+    {% endif %}
 
     <div class="card">
         <h2>Управление заявкой</h2>
@@ -292,7 +457,7 @@
 
             <p><strong>Комментарий менеджера</strong></p>
 
-            <textarea name="manager_comment">{{ lead.manager_comment }}</textarea>
+            <textarea name="manager_comment">{{ lead.manager_comment or "" }}</textarea>
 
             <button type="submit">Сохранить изменения</button>
         </form>

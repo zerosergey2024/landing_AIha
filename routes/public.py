@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from services.tasks import create_initial_consulting_task
 from flask import Blueprint, redirect, render_template, request
 
 from services.consulting import (
@@ -64,6 +64,11 @@ def consulting_audit():
         )
 
         save_client_constraints(lead_id, data)
+
+        create_initial_consulting_task(
+            lead_id=lead_id,
+            company=data.get("company", "").strip(),
+        )
 
         telegram_text = build_consulting_telegram_text(data, lead_id)
         send_telegram_message(telegram_text)
