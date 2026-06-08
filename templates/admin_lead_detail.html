@@ -80,6 +80,36 @@
             white-space: pre-wrap;
             line-height: 1.5;
         }
+    .constraints-block {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid #334;
+    background: #121a30;
+    border-radius: 14px;
+}
+
+.constraints-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.constraints-grid div {
+    background: #0f172b;
+    border: 1px solid #2c3550;
+    padding: 14px;
+    border-radius: 10px;
+}
+
+.constraints-grid strong {
+    color: #8fd8ff;
+}
+
+.constraints-grid p {
+    margin: 8px 0 0;
+    color: #d9e4ff;
+    white-space: pre-wrap;
+}
     </style>
 </head>
 
@@ -158,10 +188,98 @@
         </div>
     </div>
 
+{% if constraints %}
+    <section class="constraints-block">
+        <h2>Client Constraints</h2>
+
+        <div class="constraints-grid">
+            <div>
+                <strong>Персональные данные:</strong>
+                <p>{{ constraints.has_personal_data or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Типы ПДн:</strong>
+                <p>{{ constraints.personal_data_types or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Можно обезличить:</strong>
+                <p>{{ constraints.can_anonymize or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Облако допустимо:</strong>
+                <p>{{ constraints.cloud_allowed or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Локализация:</strong>
+                <p>{{ constraints.localization_requirements or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Политики ИБ:</strong>
+                <p>{{ constraints.security_policies or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>NDA:</strong>
+                <p>{{ constraints.nda_required or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>ROI-метрики:</strong>
+                <p>{{ constraints.roi_metrics_available or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Какие метрики есть:</strong>
+                <p>{{ constraints.roi_metrics_details or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Бюджет:</strong>
+                <p>{{ constraints.budget_known or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Готовность к MVP:</strong>
+                <p>{{ constraints.mvp_readiness or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Ограничения scope:</strong>
+                <p>{{ constraints.scope_limitations or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Риск ограничений:</strong>
+                <p>{{ constraints.constraint_risk or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Следующее действие:</strong>
+                <p>{{ constraints.next_action or "не указано" }}</p>
+            </div>
+
+            <div>
+                <strong>Комментарий:</strong>
+                <p>{{ constraints.comment or "не указано" }}</p>
+            </div>
+        </div>
+    </section>
+{% else %}
+    <section class="constraints-block">
+        <h2>Client Constraints</h2>
+        <p>Для этой заявки ограничения клиента не заполнены.</p>
+    </section>
+{% endif %}
+
     <div class="card">
         <h2>Управление заявкой</h2>
 
-        <form method="post" action="/api/leads/{{ lead.id }}/status">
+        <form method="post" action="/admin/api/leads/{{ lead.id }}/status">
             <p><strong>Статус</strong></p>
 
             <select name="status">

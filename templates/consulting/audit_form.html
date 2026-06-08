@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Первичный AI-аудит — AIha Consulting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<header>
+    <h1>Первичный AI-аудит</h1>
+    <p>
+        Ответьте на несколько вопросов. Это поможет понять,
+        какой формат диагностики подходит вашей компании.
+    </p>
+</header>
+
+<main>
+    <form method="POST" action="/consulting/audit">
+
+        <h2>1. Компания и контакт</h2>
+
+        <label>
+            Название компании
+            <input type="text" name="company" required>
+        </label>
+
+        <label>
+            Отрасль
+            <input type="text" name="industry">
+        </label>
+
+        <label>
+            Размер компании
+            <select name="company_size">
+                <option value="не указано">Не указано</option>
+                <option value="до 10 сотрудников">до 10 сотрудников</option>
+                <option value="10–50 сотрудников">10–50 сотрудников</option>
+                <option value="50–250 сотрудников">50–250 сотрудников</option>
+                <option value="250–1000 сотрудников">250–1000 сотрудников</option>
+                <option value="более 1000 сотрудников">более 1000 сотрудников</option>
+            </select>
+        </label>
+
+        <label>
+            Контактное лицо
+            <input type="text" name="contact_person" required>
+        </label>
+
+        <label>
+            Телефон / мессенджер
+            <input type="text" name="phone">
+        </label>
+
+        <label>
+            Email
+            <input type="email" name="email">
+        </label>
+
+        <h2>2. Запрос</h2>
+
+        <label>
+            Какую проблему хотите решить?
+            <textarea name="business_pain" rows="4" required></textarea>
+        </label>
+
+        <label>
+            Какой процесс хотите проверить?
+            <input type="text" name="audit_process" required>
+        </label>
+
+        <label>
+            Какие системы сейчас используются?
+            <input type="text" name="current_systems" placeholder="Excel, 1C, CRM, Telegram, email...">
+        </label>
+
+        <label>
+            Есть ли данные по процессу?
+            <select name="has_data">
+                <option value="не указано">Не указано</option>
+                <option value="да">Да</option>
+                <option value="частично">Частично</option>
+                <option value="нет">Нет</option>
+                <option value="не знаю">Не знаю</option>
+            </select>
+        </label>
+
+        <h2>3. Ограничения и данные</h2>
+
+        <label>
+            Есть ли персональные или чувствительные данные?
+            <select name="has_personal_data">
+                <option value="Не знаю">Не знаю</option>
+                <option value="Да">Да</option>
+                <option value="Нет">Нет</option>
+            </select>
+        </label>
+
+        <label>
+            Можно ли предоставить обезличенные данные?
+            <select name="can_anonymize">
+                <option value="Не указано">Не указано</option>
+                <option value="Да">Да</option>
+                <option value="Нет">Нет</option>
+                <option value="Нужно согласование">Нужно согласование</option>
+            </select>
+        </label>
+
+        <label>
+            Допускается ли облачная обработка?
+            <select name="cloud_allowed">
+                <option value="Нужно уточнить">Нужно уточнить</option>
+                <option value="Да">Да</option>
+                <option value="Нет">Нет</option>
+                <option value="Только обезличенные данные">Только обезличенные данные</option>
+                <option value="Только после NDA">Только после NDA</option>
+                <option value="Только внутри РФ">Только внутри РФ</option>
+                <option value="Только локально / внутри корпоративной сети">Только локально / внутри корпоративной сети</option>
+            </select>
+        </label>
+
+        <h2>4. Экономика и ожидания</h2>
+
+        <label>
+            Есть ли метрики для оценки эффекта?
+            <select name="roi_metrics_available">
+                <option value="Затрудняюсь ответить">Затрудняюсь ответить</option>
+                <option value="Да, есть точные данные">Да, есть точные данные</option>
+                <option value="Есть приблизительные оценки">Есть приблизительные оценки</option>
+                <option value="Пока нет">Пока нет</option>
+            </select>
+        </label>
+
+        <label>
+            Рассматриваете ли MVP / пилот после аудита?
+            <select name="mvp_readiness">
+                <option value="Пока не знаем">Пока не знаем</option>
+                <option value="Да, если аудит подтвердит целесообразность">Да, если аудит подтвердит целесообразность</option>
+                <option value="Возможно">Возможно</option>
+                <option value="Нет, нужен только аудит">Нет, нужен только аудит</option>
+            </select>
+        </label>
+
+        <label>
+            Дополнительный комментарий
+            <textarea name="comment" rows="4"></textarea>
+        </label>
+
+        <button type="submit">Отправить заявку на аудит</button>
+    </form>
+</main>
+
+</body>
+</html>

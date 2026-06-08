@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>AIha Consulting — аудит, диагностика и оптимизация</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        :root {
+            --bg: #0b1020;
+            --card: #121a30;
+            --card-soft: #16213a;
+            --text: #ffffff;
+            --muted: #9fb3d9;
+            --accent: #5dd6a7;
+            --accent-blue: #8fd8ff;
+            --border: #2c3550;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .container {
+            width: min(1120px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        header {
+            padding: 28px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .logo {
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 18px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+        }
+
+        .hero {
+            padding: 72px 0 54px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.08em;
+        }
+
+        h1 {
+            font-size: clamp(36px, 5vw, 64px);
+            line-height: 1.05;
+            margin: 0 0 24px;
+        }
+
+        h2 {
+            font-size: clamp(28px, 3vw, 40px);
+            line-height: 1.15;
+            margin: 0 0 18px;
+        }
+
+        h3 {
+            margin: 0 0 12px;
+            font-size: 20px;
+        }
+
+        p {
+            margin: 0 0 16px;
+        }
+
+        .lead {
+            color: var(--muted);
+            font-size: 19px;
+            max-width: 760px;
+        }
+
+        .hero-card {
+            background: linear-gradient(180deg, var(--card), var(--card-soft));
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px;
+        }
+
+        .hero-card ul {
+            padding-left: 20px;
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #06130e;
+        }
+
+        .btn-secondary {
+            border-color: var(--border);
+            color: var(--accent-blue);
+            background: rgba(255,255,255,0.02);
+        }
+
+        section {
+            padding: 54px 0;
+            border-top: 1px solid rgba(44, 53, 80, 0.7);
+        }
+
+        .section-head {
+            max-width: 760px;
+            margin-bottom: 28px;
+        }
+
+        .section-head p {
+            color: var(--muted);
+            font-size: 17px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .card p,
+        .card li {
+            color: var(--muted);
+        }
+
+        .card ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .process-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .process-item {
+            display: grid;
+            grid-template-columns: 42px 1fr;
+            gap: 16px;
+            padding: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+        }
+
+        .num {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(93, 214, 167, 0.14);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .note {
+            background: rgba(143, 216, 255, 0.08);
+            border: 1px solid rgba(143, 216, 255, 0.24);
+            color: var(--muted);
+            padding: 22px;
+            border-radius: 18px;
+        }
+
+        .final-cta {
+            text-align: center;
+            background: linear-gradient(180deg, rgba(93,214,167,0.10), rgba(143,216,255,0.06));
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 42px;
+        }
+
+        footer {
+            padding: 36px 0;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .hero-grid,
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="container nav">
+        <div class="logo">AIha Consulting</div>
+
+        <nav class="nav-links">
+            <a href="/">AIha Ecosystem</a>
+            <a href="/studio">AIha Studio</a>
+            <a href="/consulting/audit">Пройти аудит</a>
+        </nav>
+    </div>
+</header>
+
+<main>
+
+    <section class="hero">
+        <div class="container hero-grid">
+            <div>
+                <div class="eyebrow">Аудит • Диагностика • Оптимизация</div>
+
+                <h1>Поймите, где бизнес теряет время, деньги и управляемость</h1>
+
+                <p class="lead">
+                    AIha Consulting помогает найти узкие места в процессах, оценить готовность данных,
+                    определить реальный потенциал ИИ и подготовить практичный план оптимизации,
+                    автоматизации или MVP.
+                </p>
+
+                <div class="cta-row">
+                    <a class="btn btn-primary" href="/consulting/audit">Пройти первичный AI-аудит</a>
+                    <a class="btn btn-secondary" href="/studio">Перейти в AIha Studio</a>
+                </div>
+            </div>
+
+            <aside class="hero-card">
+                <h3>Мы не начинаем с продажи технологии</h3>
+                <p>
+                    Сначала мы разбираемся, что происходит в процессе, какие данные доступны,
+                    какие ограничения есть и нужен ли ИИ вообще.
+                </p>
+                <ul>
+                    <li>аудит процессов и данных;</li>
+                    <li>поиск узких мест и потерь;</li>
+                    <li>оценка AI-readiness;</li>
+                    <li>roadmap автоматизации;</li>
+                    <li>MVP scope после диагностики.</li>
+                </ul>
+            </aside>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="section-head">
+                <h2>Когда нужен AIha Consulting</h2>
+                <p>
+                    Мы подключаемся, когда нужно не просто «внедрить ИИ», а сначала понять,
+                    какой процесс действительно стоит менять и какие технологии дадут эффект.
+                </p>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <h3>Процессы буксуют</h3>
+                    <ul>
+                        <li>заявки, документы или задачи теряются;</li>
+                        <li>много ручного труда и дублирования;</li>
+                        <li>сложно контролировать сроки и качество.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Данные есть, но непонятно, готовы ли они</h3>
+                    <ul>
+                        <li>данные разрознены по системам;</li>
+                        <li>много пропусков и дублей;</li>
+                        <li>неясно, можно ли использовать их для ИИ.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Нужен план перед внедрением</h3>
+                    <ul>
+                        <li>нужно понять, нужен ли ИИ вообще;</li>
+                        <li>нужен roadmap автоматизации;</li>
+                        <li>требуется MVP scope с KPI и рисками.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="section-head">
+                <h2>Что мы делаем</h2>
+                <p>
+                    AIha Consulting соединяет классический процессный аудит, аудит данных,
+                    ИТ-архитектуру и понимание современных AI-инструментов.
+                </p>
+            </div>
+
+            <div class="process-list">
+                <div class="process-item">
+                    <div class="num">1</div>
+                    <div>
+                        <h3>Анализ процессов и ИТ-инфраструктуры</h3>
+                        <p>
+                            Изучаем текущие бизнес-процессы, роли сотрудников, используемые системы,
+                            ручные операции, дублирование, согласования и точки потерь.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-item">
+                    <div class="num">2</div>
+                    <div>
+                        <h3>Аудит данных</h3>
+                        <p>
+                            Проверяем источники данных, объём, историю, структуру, полноту,
+                            качество заполнения, наличие дублей, персональные данные и возможность обезличивания.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-item">
+                    <div class="num">3</div>
+                    <div>
+                        <h3>Поиск сценариев оптимизации и ИИ</h3>
+                        <p>
+                            Определяем, где достаточно BI, автоматизации или реинжиниринга процесса,
+                            а где могут быть полезны ИИ-агенты, RAG, ML-модели или другие AI-инструменты.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-item">
+                    <div class="num">4</div>
+                    <div>
+                        <h3>Стратегия и roadmap</h3>
+                        <p>
+                            Формируем практичный план действий: приоритетные сценарии, данные,
+                            архитектуру, интеграции, бюджетные ориентиры, сроки, риски и KPI.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-item">
+                    <div class="num">5</div>
+                    <div>
+                        <h3>MVP scope и подготовка к пилоту</h3>
+                        <p>
+                            Если гипотеза подтверждается, описываем минимальный объём MVP:
+                            цель, границы, функции, данные, ограничения, KPI и критерии успеха.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="process-item">
+                    <div class="num">6</div>
+                    <div>
+                        <h3>Оценка эффективности</h3>
+                        <p>
+                            Помогаем оценить операционный эффект, определить метрики,
+                            а при наличии данных — подготовить расчёт ROI и план дальнейших улучшений.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container two-col">
+            <div>
+                <h2>Чем AIha Consulting отличается от классического консалтинга</h2>
+                <p class="lead">
+                    Классический консалтинг отвечает на вопросы: что происходит в бизнесе,
+                    где проблемы и что нужно изменить.
+                </p>
+            </div>
+
+            <div class="note">
+                <h3>AIha Consulting добавляет технологический уровень</h3>
+                <p>
+                    Мы отвечаем ещё и на вопрос: с помощью каких технологий это сделать эффективнее.
+                    Это может быть не только ИИ, но и BI, автоматизация, интеграции,
+                    процессный реинжиниринг или подготовка данных.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="section-head">
+                <h2>Что получает клиент</h2>
+                <p>
+                    Результат зависит от формата диагностики, но в основе всегда лежит практический вывод:
+                    что делать дальше и почему.
+                </p>
+            </div>
+
+            <div class="cards">
+                <div class="card">
+                    <h3>Диагностика</h3>
+                    <ul>
+                        <li>карта процесса as-is;</li>
+                        <li>список узких мест;</li>
+                        <li>оценка готовности данных;</li>
+                        <li>карта рисков.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Сценарии и стратегия</h3>
+                    <ul>
+                        <li>приоритетные use cases;</li>
+                        <li>понимание, нужен ли ИИ;</li>
+                        <li>roadmap автоматизации;</li>
+                        <li>KPI и критерии успеха.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Подготовка к следующему шагу</h3>
+                    <ul>
+                        <li>MVP scope;</li>
+                        <li>требования к данным;</li>
+                        <li>ограничения и допущения;</li>
+                        <li>рекомендации по внедрению.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container two-col">
+            <div>
+                <h2>Связь с AIha Studio</h2>
+                <p>
+                    Если по итогам диагностики подтверждается сильный сценарий для ИИ или автоматизации,
+                    проект может перейти в AIha Studio.
+                </p>
+                <p>
+                    AIha Studio подключается для разработки MVP, AI-агентов, RAG-систем,
+                    ML-моделей, интеграций и промышленного внедрения.
+                </p>
+            </div>
+
+            <div class="note">
+                <h3>Важный принцип</h3>
+                <p>
+                    Каждый проект AIha Studio проходит диагностический контур AIha Consulting.
+                    При этом AIha Consulting может быть самостоятельной услугой:
+                    не каждый аудит обязан завершаться внедрением ИИ.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <div class="final-cta">
+                <h2>Начните с первичного AI-аудита</h2>
+                <p>
+                    Мы проанализируем ваш запрос, определим уровень готовности процесса и данных,
+                    выявим ограничения и предложим оптимальный маршрут.
+                </p>
+
+                <div class="cta-row" style="justify-content: center;">
+                    <a class="btn btn-primary" href="/consulting/audit">Пройти первичный AI-аудит</a>
+                    <a class="btn btn-secondary" href="/">Вернуться в AIha Ecosystem</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    <div class="container">
+        AIha Consulting — аудит, диагностика и оптимизация бизнеса с фокусом на ИИ и автоматизацию.
+    </div>
+</footer>
+
+</body>
+</html>
