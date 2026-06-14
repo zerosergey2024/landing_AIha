@@ -1,17 +1,28 @@
 from __future__ import annotations
 
-from services.intake_blocks import build_intake_v33_input_block, get_lead_with_constraints
-from flask import Blueprint, jsonify, redirect, render_template, request, session
 import os
 import sqlite3
+from datetime import datetime, timezone
+from urllib.parse import urlencode
 
 from dotenv import load_dotenv
-from flask import Blueprint, redirect, render_template, request, session
+from flask import Blueprint, jsonify, redirect, render_template, request, session
 
 from db import DB_PATH
 from export_leads_xlsx import export_leads_to_xlsx
-from flask import jsonify
-from datetime import datetime, timezone
+from services.ai_agent import run_ai_agent_for_task
+from services.final_outputs import get_final_outputs
+from services.intake_blocks import (
+    build_task_input_block,
+    get_lead_with_constraints,
+    get_task_for_lead,
+)
+from services.tasks import (
+    create_next_task_after_update,
+    get_default_done_next_action,
+    update_agent_task,
+)
+
 
 load_dotenv()
 
@@ -19,6 +30,7 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
+
 
 LEAD_STATUSES = {
     "new": "Новая",
@@ -31,8 +43,259 @@ LEAD_STATUSES = {
 }
 
 
+AI_RUN_ALLOWED_STAGES = {
+    "Intake Completeness",
+    "Risk Assessment",
+    "Economics Assessment",
+    "Final Output",
+}
+
+
+RESULT_REQUIRED_FOR_DONE_STAGES = {
+    "Intake Completeness",
+    "Risk Assessment",
+    "Economics Assessment",
+    "Final Output",
+    "Client Delivery",
+}
+
+
+TASK_STATUSES = {
+    "New",
+    "In Progress",
+    "Waiting for Client Info",
+    "Waiting for Data",
+    "Waiting for Human Review",
+    "Ready for Intake Agent",
+    "Done",
+    "Blocked",
+    "Cancelled",
+}
+
+
+LEAD_SELECT_SQL = """
+    SELECT
+        id,
+        created_at,
+        updated_at,
+        source,
+        name,
+        phone,
+        company,
+        message,
+        industry,
+        process,
+        ai_type,
+        effect,
+        priority,
+        status,
+        manager_comment
+    FROM leads
+"""
+
+
+CONSTRAINTS_SELECT_SQL = """
+    SELECT
+        id,
+        lead_id,
+        has_personal_data,
+        personal_data_types,
+        can_anonymize,
+        cloud_allowed,
+        localization_requirements,
+        security_policies,
+        nda_required,
+        roi_metrics_available,
+        roi_metrics_details,
+        budget_known,
+        mvp_readiness,
+        scope_limitations,
+        constraint_risk,
+        next_action,
+        comment,
+        created_at,
+        updated_at
+    FROM client_constraints
+"""
+
+
+TASK_SELECT_SQL = """
+    SELECT
+        id,
+        task_code,
+        lead_id,
+        company,
+        agent_type,
+        stage,
+        task_title,
+        input_source,
+        expected_output,
+        status,
+        priority,
+        owner,
+        human_required,
+        result,
+        next_action,
+        due_date,
+        comment,
+        created_at,
+        updated_at
+    FROM agent_tasks
+"""
+
+
 def admin_required() -> bool:
     return session.get("admin_logged_in") is True
+
+
+def redirect_with_error(path: str, error: str):
+    query = urlencode({"error": error})
+    return redirect(f"{path}?{query}")
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def normalize_form_value(value: str | None, default: str = "не указано") -> str:
+    text = (value or "").strip()
+    return text if text else default
+
+
+def is_empty_value(value: str) -> bool:
+    return value.strip() in {
+        "",
+        "не указано",
+        "Не указано",
+        "none",
+        "None",
+        "null",
+        "NULL",
+    }
+
+
+def get_task_meta(task_id: int) -> sqlite3.Row | None:
+    """
+    Возвращает минимальные данные задачи для route-логики.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        return conn.execute(
+            """
+            SELECT
+                id,
+                lead_id,
+                stage,
+                status
+            FROM agent_tasks
+            WHERE id = ?
+            """,
+            (task_id,),
+        ).fetchone()
+
+
+def get_lead_detail_data(
+    lead_id: int,
+) -> tuple[sqlite3.Row | None, sqlite3.Row | None, list[sqlite3.Row]]:
+    """
+    Возвращает данные карточки лида: lead, constraints, tasks.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        lead = conn.execute(
+            f"""
+            {LEAD_SELECT_SQL}
+            WHERE id = ?
+            """,
+            (lead_id,),
+        ).fetchone()
+
+        constraints = conn.execute(
+            f"""
+            {CONSTRAINTS_SELECT_SQL}
+            WHERE lead_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (lead_id,),
+        ).fetchone()
+
+        tasks = conn.execute(
+            f"""
+            {TASK_SELECT_SQL}
+            WHERE lead_id = ?
+            ORDER BY id ASC
+            """,
+            (lead_id,),
+        ).fetchall()
+
+    return lead, constraints, tasks
+
+
+def get_first_task_id_for_lead(lead_id: int) -> int | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        row = conn.execute(
+            """
+            SELECT id
+            FROM agent_tasks
+            WHERE lead_id = ?
+            ORDER BY id ASC
+            LIMIT 1
+            """,
+            (lead_id,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    return int(row[0])
+
+
+def build_roi_details_with_extra_fields(
+    *,
+    roi_metrics_details: str,
+    lost_request_value: str,
+    complex_request_share: str,
+    sla_rules: str,
+    integrations: str,
+) -> str:
+    """
+    Добавляет дополнительные уточнения к roi_metrics_details.
+
+    Важно: не дублирует строки, если форма сохраняется несколько раз.
+    """
+    base_text = roi_metrics_details.strip()
+    extra_lines: list[str] = []
+
+    if lost_request_value:
+        extra_lines.append(f"Стоимость одной потерянной заявки: {lost_request_value}")
+
+    if complex_request_share:
+        extra_lines.append(f"Доля сложных заявок: {complex_request_share}")
+
+    if sla_rules:
+        extra_lines.append(f"SLA / правила обработки: {sla_rules}")
+
+    if integrations:
+        extra_lines.append(f"Интеграции / текущие системы: {integrations}")
+
+    if not extra_lines:
+        return base_text or "не указано"
+
+    existing_text = base_text if base_text != "не указано" else ""
+    new_lines = [line for line in extra_lines if line not in existing_text]
+
+    if not new_lines:
+        return base_text or "не указано"
+
+    extra_text = "\n".join(new_lines)
+
+    if existing_text:
+        return f"{existing_text}\n\nДополнительные уточнения:\n{extra_text}"
+
+    return f"Дополнительные уточнения:\n{extra_text}"
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
@@ -68,24 +331,8 @@ def admin_leads():
     source_filter = request.args.get("source", "").strip()
     search_query = request.args.get("q", "").strip()
 
-    query = """
-        SELECT
-            id,
-            created_at,
-            updated_at,
-            source,
-            name,
-            phone,
-            company,
-            message,
-            industry,
-            process,
-            ai_type,
-            effect,
-            priority,
-            status,
-            manager_comment
-        FROM leads
+    query = f"""
+        {LEAD_SELECT_SQL}
         WHERE 1 = 1
     """
 
@@ -155,90 +402,7 @@ def admin_lead_detail(lead_id: int):
     if not admin_required():
         return redirect("/admin/login")
 
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-
-        lead = conn.execute(
-            """
-            SELECT
-                id,
-                created_at,
-                updated_at,
-                source,
-                name,
-                phone,
-                company,
-                message,
-                industry,
-                process,
-                ai_type,
-                effect,
-                priority,
-                status,
-                manager_comment
-            FROM leads
-            WHERE id = ?
-            """,
-            (lead_id,),
-        ).fetchone()
-
-        constraints = conn.execute(
-            """
-            SELECT
-                id,
-                lead_id,
-                has_personal_data,
-                personal_data_types,
-                can_anonymize,
-                cloud_allowed,
-                localization_requirements,
-                security_policies,
-                nda_required,
-                roi_metrics_available,
-                roi_metrics_details,
-                budget_known,
-                mvp_readiness,
-                scope_limitations,
-                constraint_risk,
-                next_action,
-                comment,
-                created_at,
-                updated_at
-            FROM client_constraints
-            WHERE lead_id = ?
-            ORDER BY id DESC
-            LIMIT 1
-            """,
-            (lead_id,),
-        ).fetchone()
-        tasks = conn.execute(
-            """
-            SELECT
-                id,
-                task_code,
-                lead_id,
-                company,
-                agent_type,
-                stage,
-                task_title,
-                input_source,
-                expected_output,
-                status,
-                priority,
-                owner,
-                human_required,
-                result,
-                next_action,
-                due_date,
-                comment,
-                created_at,
-                updated_at
-            FROM agent_tasks
-            WHERE lead_id = ?
-            ORDER BY id ASC
-            """,
-            (lead_id,),
-        ).fetchall()
+    lead, constraints, tasks = get_lead_detail_data(lead_id)
 
     if lead is None:
         return "Заявка не найдена", 404
@@ -249,25 +413,266 @@ def admin_lead_detail(lead_id: int):
         constraints=constraints,
         tasks=tasks,
         statuses=LEAD_STATUSES,
+        ai_run_allowed_stages=AI_RUN_ALLOWED_STAGES,
     )
 
-@admin_bp.get("/leads/<int:lead_id>/intake-input")
-def admin_lead_intake_input(lead_id: int):
+
+@admin_bp.post("/leads/<int:lead_id>/constraints/update")
+def admin_update_constraints(lead_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    data = request.form.to_dict()
+
+    has_personal_data = normalize_form_value(data.get("has_personal_data"))
+    personal_data_types = normalize_form_value(data.get("personal_data_types"))
+    can_anonymize = normalize_form_value(data.get("can_anonymize"))
+    cloud_allowed = normalize_form_value(data.get("cloud_allowed"))
+    localization_requirements = normalize_form_value(data.get("localization_requirements"))
+    security_policies = normalize_form_value(data.get("security_policies"))
+    nda_required = normalize_form_value(data.get("nda_required"))
+
+    roi_metrics_available = normalize_form_value(data.get("roi_metrics_available"))
+    roi_metrics_details = normalize_form_value(data.get("roi_metrics_details"))
+
+    lost_request_value = (data.get("lost_request_value") or "").strip()
+    complex_request_share = (data.get("complex_request_share") or "").strip()
+    sla_rules = (data.get("sla_rules") or "").strip()
+    integrations = (data.get("integrations") or "").strip()
+
+    roi_metrics_details = build_roi_details_with_extra_fields(
+        roi_metrics_details=roi_metrics_details,
+        lost_request_value=lost_request_value,
+        complex_request_share=complex_request_share,
+        sla_rules=sla_rules,
+        integrations=integrations,
+    )
+
+    budget_known = normalize_form_value(data.get("budget_known"))
+    mvp_readiness = normalize_form_value(data.get("mvp_readiness"))
+    scope_limitations = normalize_form_value(data.get("scope_limitations"))
+
+    constraint_risk = normalize_form_value(data.get("constraint_risk"))
+    next_action = normalize_form_value(data.get("next_action"))
+    comment = normalize_form_value(data.get("comment"))
+
+    now = utc_now()
+
+    with sqlite3.connect(DB_PATH) as conn:
+        existing = conn.execute(
+            """
+            SELECT id
+            FROM client_constraints
+            WHERE lead_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (lead_id,),
+        ).fetchone()
+
+        if existing:
+            conn.execute(
+                """
+                UPDATE client_constraints
+                SET
+                    has_personal_data = ?,
+                    personal_data_types = ?,
+                    can_anonymize = ?,
+                    cloud_allowed = ?,
+                    localization_requirements = ?,
+                    security_policies = ?,
+                    nda_required = ?,
+                    roi_metrics_available = ?,
+                    roi_metrics_details = ?,
+                    budget_known = ?,
+                    mvp_readiness = ?,
+                    scope_limitations = ?,
+                    constraint_risk = ?,
+                    next_action = ?,
+                    comment = ?,
+                    updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    has_personal_data,
+                    personal_data_types,
+                    can_anonymize,
+                    cloud_allowed,
+                    localization_requirements,
+                    security_policies,
+                    nda_required,
+                    roi_metrics_available,
+                    roi_metrics_details,
+                    budget_known,
+                    mvp_readiness,
+                    scope_limitations,
+                    constraint_risk,
+                    next_action,
+                    comment,
+                    now,
+                    existing[0],
+                ),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO client_constraints (
+                    lead_id,
+                    has_personal_data,
+                    personal_data_types,
+                    can_anonymize,
+                    cloud_allowed,
+                    localization_requirements,
+                    security_policies,
+                    nda_required,
+                    roi_metrics_available,
+                    roi_metrics_details,
+                    budget_known,
+                    mvp_readiness,
+                    scope_limitations,
+                    constraint_risk,
+                    next_action,
+                    comment,
+                    created_at,
+                    updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    lead_id,
+                    has_personal_data,
+                    personal_data_types,
+                    can_anonymize,
+                    cloud_allowed,
+                    localization_requirements,
+                    security_policies,
+                    nda_required,
+                    roi_metrics_available,
+                    roi_metrics_details,
+                    budget_known,
+                    mvp_readiness,
+                    scope_limitations,
+                    constraint_risk,
+                    next_action,
+                    comment,
+                    now,
+                    now,
+                ),
+            )
+
+        conn.commit()
+
+    return redirect(f"/admin/leads/{lead_id}")
+
+
+@admin_bp.get("/leads/<int:lead_id>/final")
+def admin_final_outputs(lead_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    outputs = get_final_outputs(lead_id)
+
+    if outputs is None:
+        return "Заявка не найдена", 404
+
+    return render_template(
+        "admin_final_outputs.html",
+        lead=outputs["lead"],
+        constraints=outputs["constraints"],
+        tasks=outputs["tasks"],
+        workflow_type=outputs["workflow_type"],
+        final_output_task=outputs["final_output_task"],
+        report_task=outputs["report_task"],
+        human_review_task=outputs["human_review_task"],
+        commercial_proposal_task=outputs["commercial_proposal_task"],
+        final_report=outputs["final_report"],
+        commercial_proposal=outputs["commercial_proposal"],
+    )
+
+
+@admin_bp.get("/leads/<int:lead_id>/tasks/<int:task_id>/input")
+def admin_task_input(lead_id: int, task_id: int):
     if not admin_required():
         return redirect("/admin/login")
 
     lead, constraints = get_lead_with_constraints(lead_id)
+    task = get_task_for_lead(lead_id, task_id)
 
     if lead is None:
         return "Заявка не найдена", 404
 
-    input_block = build_intake_v33_input_block(lead, constraints)
+    if task is None:
+        return "Задача не найдена", 404
+
+    try:
+        input_block = build_task_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+    except ValueError as exc:
+        return str(exc), 400
 
     return render_template(
-        "admin_intake_input.html",
+        "admin_task_input.html",
         lead=lead,
+        task=task,
         input_block=input_block,
     )
+
+
+@admin_bp.get("/leads/<int:lead_id>/intake-input")
+def admin_lead_intake_input(lead_id: int):
+    """
+    Старый URL оставлен для совместимости.
+    Теперь Intake v3.3 не используется.
+
+    Редиректим на input block первой активной задачи лида.
+    Обычно это T-001 / Intake Completeness.
+    """
+    if not admin_required():
+        return redirect("/admin/login")
+
+    task_id = get_first_task_id_for_lead(lead_id)
+
+    if task_id is None:
+        return "Для этой заявки ещё нет задач workflow", 404
+
+    return redirect(f"/admin/leads/{lead_id}/tasks/{task_id}/input")
+
+
+@admin_bp.post("/tasks/<int:task_id>/run-ai")
+def admin_run_ai_task(task_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    form_lead_id = request.form.get("lead_id", "").strip()
+    task = get_task_meta(task_id)
+
+    if task is None:
+        if form_lead_id:
+            return redirect_with_error(f"/admin/leads/{form_lead_id}", "Задача не найдена")
+        return "Задача не найдена", 404
+
+    lead_id = int(task["lead_id"])
+    stage = task["stage"]
+
+    if stage not in AI_RUN_ALLOWED_STAGES:
+        return redirect_with_error(
+            f"/admin/leads/{lead_id}",
+            f"AI Agent нельзя запускать для этапа {stage}",
+        )
+
+    try:
+        result = run_ai_agent_for_task(task_id)
+    except Exception as exc:
+        return redirect_with_error(
+            f"/admin/leads/{lead_id}",
+            f"Ошибка запуска AI Agent: {exc}",
+        )
+
+    lead_id_from_result = result.get("lead_id") or lead_id
+    return redirect(f"/admin/leads/{lead_id_from_result}")
 
 
 @admin_bp.post("/export-xlsx")
@@ -277,6 +682,7 @@ def admin_export_xlsx():
 
     export_leads_to_xlsx()
     return redirect("/admin/leads")
+
 
 @admin_bp.post("/api/leads/<int:lead_id>/status")
 def update_lead_status(lead_id: int):
@@ -297,7 +703,7 @@ def update_lead_status(lead_id: int):
             }
         ), 400
 
-    updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    updated_at = utc_now()
 
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
@@ -325,3 +731,53 @@ def update_lead_status(lead_id: int):
             "status": new_status,
         }
     )
+
+
+@admin_bp.post("/tasks/<int:task_id>/update")
+def admin_update_task(task_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    data = request.form.to_dict()
+
+    lead_id = data.get("lead_id", "").strip()
+    stage = data.get("stage", "").strip()
+    status = data.get("status", "").strip() or "New"
+
+    result = data.get("result", "").strip()
+    next_action = data.get("next_action", "").strip()
+    comment = data.get("comment", "").strip() or "не указано"
+
+    if status not in TASK_STATUSES:
+        return "Некорректный статус задачи", 400
+
+    if status == "Done":
+        if stage in RESULT_REQUIRED_FOR_DONE_STAGES and is_empty_value(result):
+            return (
+                "Нельзя закрыть задачу в Done без результата. "
+                "Запустите AI Agent или вставьте результат вручную."
+            ), 400
+
+        if is_empty_value(next_action):
+            next_action = get_default_done_next_action(stage)
+    else:
+        if is_empty_value(result):
+            result = "не указано"
+
+        if is_empty_value(next_action):
+            next_action = "не указано"
+
+    update_agent_task(
+        task_id=task_id,
+        status=status,
+        result=result,
+        next_action=next_action,
+        comment=comment,
+    )
+
+    create_next_task_after_update(task_id)
+
+    if lead_id:
+        return redirect(f"/admin/leads/{lead_id}")
+
+    return redirect("/admin/leads")

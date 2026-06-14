@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Input block — {{ task.task_code }} / {{ task.stage }}</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #0b1020;
+            color: #ffffff;
+        }
+
+        a {
+            color: #8fd8ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .meta {
+            color: #9fb3d9;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 75vh;
+            background: #0f172b;
+            color: #ffffff;
+            border: 1px solid #334;
+            border-radius: 12px;
+            padding: 18px;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        button {
+            margin: 16px 0;
+            padding: 12px 18px;
+            border: 0;
+            cursor: pointer;
+            background: #2272ff;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Input block — {{ task.task_code }} / {{ task.stage }}</h1>
+
+<div class="meta">
+    Lead ID: {{ lead.id }} |
+    Компания: {{ lead.company or "Не указана" }} |
+    Task: {{ task.task_code }} |
+    Stage: {{ task.stage }} |
+    Agent: {{ task.agent_type }}
+    <br>
+    <a href="/admin/leads/{{ lead.id }}">← Вернуться в карточку лида</a>
+</div>
+
+<button onclick="copyInputBlock()">Скопировать input block</button>
+
+<textarea id="inputBlock" readonly>{{ input_block }}</textarea>
+
+<script>
+    function copyInputBlock() {
+        const textarea = document.getElementById("inputBlock");
+        textarea.select();
+        textarea.setSelectionRange(0, 999999);
+
+        navigator.clipboard.writeText(textarea.value)
+            .then(() => alert("Input block скопирован"))
+            .catch(() => {
+                document.execCommand("copy");
+                alert("Input block скопирован");
+            });
+    }
+</script>
+
+</body>
+</html>

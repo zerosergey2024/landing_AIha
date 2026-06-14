@@ -23,12 +23,25 @@
             margin: 0 auto;
         }
 
-        .card {
+        .card,
+        .constraints-block,
+        .constraints-edit-block,
+        .tasks-block {
             background: #121a30;
             border: 1px solid #334;
             padding: 24px;
             margin-bottom: 24px;
             border-radius: 14px;
+        }
+
+        .constraints-edit-block {
+            margin-top: 28px;
+            border-color: #26324a;
+            background: #101827;
+        }
+
+        .constraints-edit-block h2 {
+            margin-top: 0;
         }
 
         .meta {
@@ -37,37 +50,92 @@
             line-height: 1.6;
         }
 
-        .grid {
+        .alert-error {
+            margin: 16px 0 22px;
+            padding: 14px 16px;
+            border: 1px solid #7f2b3a;
+            background: #2a1220;
+            color: #ffd0d8;
+            border-radius: 12px;
+            white-space: pre-wrap;
+        }
+
+        .top-links {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin: 18px 0 24px;
+        }
+
+        .top-links a {
+            display: inline-block;
+            padding: 10px 14px;
+            border: 1px solid #2c3550;
+            background: #0f172b;
+            border-radius: 10px;
+        }
+
+        .grid,
+        .constraints-grid,
+        .constraints-form .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 18px;
         }
 
-        .field {
+        .field,
+        .constraints-grid div,
+        .task-card {
             background: #0f172b;
-            padding: 14px;
             border: 1px solid #2c3550;
+            padding: 14px;
             border-radius: 10px;
+        }
+
+        .task-card {
+            padding: 16px;
+            border-radius: 12px;
+        }
+
+        .field strong,
+        .constraints-grid strong,
+        .task-card strong,
+        .task-head strong {
+            color: #8fd8ff;
+        }
+
+        .task-head strong {
+            font-size: 18px;
         }
 
         .field strong {
             display: block;
             margin-bottom: 8px;
-            color: #8fd8ff;
         }
 
+        .constraints-grid p,
+        .task-card p {
+            margin: 8px 0 0;
+            color: #d9e4ff;
+            white-space: pre-wrap;
+        }
+
+        input,
         textarea,
         select {
             width: 100%;
+            box-sizing: border-box;
             padding: 10px;
             background: #0f172b;
-            color: white;
+            color: #ffffff;
             border: 1px solid #334;
             border-radius: 10px;
+            font: inherit;
         }
 
         textarea {
             min-height: 100px;
+            resize: vertical;
         }
 
         button {
@@ -76,9 +144,14 @@
             border: 0;
             cursor: pointer;
             background: #2272ff;
-            color: white;
+            color: #ffffff;
             font-weight: bold;
             border-radius: 10px;
+        }
+
+        button:disabled {
+            cursor: wait;
+            opacity: 0.75;
         }
 
         .message {
@@ -86,57 +159,45 @@
             line-height: 1.5;
         }
 
-        .constraints-block {
-            margin-top: 24px;
-            margin-bottom: 24px;
-            padding: 20px;
-            border: 1px solid #334;
-            background: #121a30;
-            border-radius: 14px;
+        .constraints-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
         }
 
-        .constraints-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .constraints-form input,
+        .constraints-form textarea {
+            border-color: #34415f;
+            background: #0b1120;
+            color: #eef4ff;
+        }
+
+        .constraints-form .wide {
+            grid-column: 1 / -1;
+        }
+
+        .form-actions {
+            display: flex;
+            align-items: center;
             gap: 16px;
+            margin-top: 18px;
+            flex-wrap: wrap;
         }
 
-        .constraints-grid div {
-            background: #0f172b;
-            border: 1px solid #2c3550;
-            padding: 14px;
-            border-radius: 10px;
+        .form-actions button {
+            background: #5dd6a7;
+            color: #06130e;
         }
 
-        .constraints-grid strong {
-            color: #8fd8ff;
-        }
-
-        .constraints-grid p {
-            margin: 8px 0 0;
-            color: #d9e4ff;
-            white-space: pre-wrap;
-        }
-
-        .tasks-block {
-            margin-top: 24px;
-            margin-bottom: 24px;
-            padding: 20px;
-            border: 1px solid #334;
-            background: #121a30;
-            border-radius: 14px;
+        .form-actions a {
+            color: #9cc8ff;
+            text-decoration: none;
         }
 
         .tasks-list {
             display: grid;
             gap: 16px;
-        }
-
-        .task-card {
-            background: #0f172b;
-            border: 1px solid #2c3550;
-            padding: 16px;
-            border-radius: 12px;
         }
 
         .task-head {
@@ -145,11 +206,6 @@
             align-items: center;
             gap: 16px;
             margin-bottom: 12px;
-        }
-
-        .task-head strong {
-            color: #8fd8ff;
-            font-size: 18px;
         }
 
         .task-status {
@@ -162,29 +218,151 @@
             font-weight: bold;
         }
 
-        .task-card p {
-            margin: 10px 0;
-            color: #d9e4ff;
-            white-space: pre-wrap;
-        }
-
-        .task-card strong {
-            color: #8fd8ff;
-        }
-
         .task-meta {
             color: #9fb3d9 !important;
             font-size: 13px;
         }
 
+        .task-form {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid #2c3550;
+        }
+
+        .task-form textarea {
+            min-height: 80px;
+            margin-bottom: 8px;
+        }
+
+        .task-form select {
+            margin-bottom: 8px;
+        }
+
+        .task-save-button {
+            background: #2272ff;
+            color: #ffffff;
+        }
+
+        .task-save-button.secondary {
+            background: #1b2745;
+            color: #d9e4ff;
+            border: 1px solid #2c3550;
+        }
+
+        .task-ai-form {
+            margin: 14px 0 8px;
+        }
+
+        .ai-run-button {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border: 0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #5dd6a7, #2272ff);
+            color: #06130e;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 0 0 rgba(93, 214, 167, 0);
+            transition:
+                transform 0.15s ease,
+                box-shadow 0.15s ease,
+                opacity 0.15s ease,
+                filter 0.15s ease;
+        }
+
+        .ai-run-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(93, 214, 167, 0.22);
+            filter: brightness(1.05);
+        }
+
+        .ai-run-button:active {
+            transform: translateY(0);
+        }
+
+        .ai-run-button.is-loading {
+            cursor: wait;
+            opacity: 0.9;
+            filter: saturate(1.15);
+        }
+
+        .ai-run-button.is-loading .ai-run-icon {
+            animation: ai-spin 0.9s linear infinite;
+        }
+
+        .ai-run-button.is-loading::after {
+            content: "";
+            position: absolute;
+            inset: -3px;
+            border-radius: 14px;
+            border: 1px solid rgba(143, 216, 255, 0.65);
+            animation: ai-pulse 1.1s ease-out infinite;
+            pointer-events: none;
+        }
+
+        .ai-run-hint {
+            margin: 8px 0 14px;
+            color: #9fb3d9;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .task-note {
+            margin: 14px 0;
+            padding: 12px;
+            background: #1b2745;
+            border: 1px solid #2c3550;
+            border-radius: 10px;
+            color: #d9e4ff;
+        }
+
+        @keyframes ai-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes ai-pulse {
+            0% {
+                opacity: 0.85;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(1.08);
+            }
+        }
+
         @media (max-width: 760px) {
+            body {
+                margin: 18px;
+            }
+
             .grid,
-            .constraints-grid {
+            .constraints-grid,
+            .constraints-form .form-grid {
                 grid-template-columns: 1fr;
             }
 
-            body {
-                margin: 18px;
+            .card,
+            .constraints-block,
+            .constraints-edit-block,
+            .tasks-block {
+                padding: 18px;
+            }
+
+            .task-head {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
@@ -203,11 +381,21 @@
         Обновлено: {{ lead.updated_at }}
     </div>
 
-    <p>
+    {% if request.args.get("error") %}
+        <div class="alert-error">
+            {{ request.args.get("error") }}
+        </div>
+    {% endif %}
+
+    <div class="top-links">
         <a href="/admin/leads/{{ lead.id }}/intake-input">
-            Сформировать input для Intake Agent v3.3
+            Открыть input block первой задачи
         </a>
-    </p>
+
+        <a href="/admin/leads/{{ lead.id }}/final">
+            Открыть итоговый отчёт / КП
+        </a>
+    </div>
 
     <div class="card">
         <h2>Контакт</h2>
@@ -359,6 +547,170 @@
         </section>
     {% endif %}
 
+    <section class="constraints-edit-block">
+        <h2>Дополнительные данные для аудита</h2>
+
+        <form method="post" action="/admin/leads/{{ lead.id }}/constraints/update" class="constraints-form">
+            <div class="form-grid">
+                <label>
+                    Персональные данные
+                    <input
+                        type="text"
+                        name="has_personal_data"
+                        value="{{ constraints.has_personal_data if constraints else '' }}"
+                        placeholder="Да / Нет / Нужно уточнить"
+                    >
+                </label>
+
+                <label>
+                    Типы персональных данных
+                    <textarea name="personal_data_types" rows="3" placeholder="ФИО, телефоны, адреса, тексты заявок...">{{ constraints.personal_data_types if constraints else '' }}</textarea>
+                </label>
+
+                <label>
+                    Можно обезличить
+                    <input
+                        type="text"
+                        name="can_anonymize"
+                        value="{{ constraints.can_anonymize if constraints else '' }}"
+                        placeholder="Да / Нет / Частично"
+                    >
+                </label>
+
+                <label>
+                    Облако допустимо
+                    <input
+                        type="text"
+                        name="cloud_allowed"
+                        value="{{ constraints.cloud_allowed if constraints else '' }}"
+                        placeholder="Да / Нет / Только обезличенные данные"
+                    >
+                </label>
+
+                <label>
+                    Требования к локализации
+                    <textarea name="localization_requirements" rows="2" placeholder="Локально / РФ / облако запрещено / не указано">{{ constraints.localization_requirements if constraints else '' }}</textarea>
+                </label>
+
+                <label>
+                    Политики ИБ
+                    <textarea name="security_policies" rows="2" placeholder="Есть / нет / нужно запросить / описание требований">{{ constraints.security_policies if constraints else '' }}</textarea>
+                </label>
+
+                <label>
+                    NDA
+                    <input
+                        type="text"
+                        name="nda_required"
+                        value="{{ constraints.nda_required if constraints else '' }}"
+                        placeholder="Нужно / Не нужно / Нужно уточнить"
+                    >
+                </label>
+
+                <label>
+                    Метрики для ROI
+                    <input
+                        type="text"
+                        name="roi_metrics_available"
+                        value="{{ constraints.roi_metrics_available if constraints else '' }}"
+                        placeholder="Да, есть точные данные / Частично / Нет"
+                    >
+                </label>
+
+                <label class="wide">
+                    Экономика и метрики процесса
+                    <textarea name="roi_metrics_details" rows="8" placeholder="Объём операций, время обработки, стоимость часа, потери, просрочки, контроль, SLA...">{{ constraints.roi_metrics_details if constraints else '' }}</textarea>
+                </label>
+
+                <label>
+                    Стоимость одной потерянной заявки
+                    <input
+                        type="text"
+                        name="lost_request_value"
+                        placeholder="Например: 8 000 ₽"
+                    >
+                </label>
+
+                <label>
+                    Доля сложных заявок
+                    <input
+                        type="text"
+                        name="complex_request_share"
+                        placeholder="Например: 15%"
+                    >
+                </label>
+
+                <label>
+                    SLA / правила обработки
+                    <textarea
+                        name="sla_rules"
+                        rows="3"
+                        placeholder="Например: первичная обработка в течение 2 часов"
+                    ></textarea>
+                </label>
+
+                <label>
+                    Интеграции / текущие системы
+                    <textarea
+                        name="integrations"
+                        rows="3"
+                        placeholder="Например: Excel, Telegram, 1C, выгрузка CSV возможна"
+                    ></textarea>
+                </label>
+
+                <label>
+                    Бюджет
+                    <input
+                        type="text"
+                        name="budget_known"
+                        value="{{ constraints.budget_known if constraints else '' }}"
+                        placeholder="Известен / обсуждается / не указан"
+                    >
+                </label>
+
+                <label>
+                    Готовность к MVP
+                    <input
+                        type="text"
+                        name="mvp_readiness"
+                        value="{{ constraints.mvp_readiness if constraints else '' }}"
+                        placeholder="Да / Нет / После подтверждения экономики"
+                    >
+                </label>
+
+                <label class="wide">
+                    Ограничения scope
+                    <textarea name="scope_limitations" rows="3" placeholder="Что точно не входит, что запрещено, какие ограничения клиента">{{ constraints.scope_limitations if constraints else '' }}</textarea>
+                </label>
+
+                <label>
+                    Риск ограничений
+                    <input
+                        type="text"
+                        name="constraint_risk"
+                        value="{{ constraints.constraint_risk if constraints else '' }}"
+                        placeholder="Низкий / Средний / Высокий"
+                    >
+                </label>
+
+                <label class="wide">
+                    Следующее действие по ограничениям
+                    <textarea name="next_action" rows="2" placeholder="Что нужно запросить / согласовать / проверить">{{ constraints.next_action if constraints else '' }}</textarea>
+                </label>
+
+                <label class="wide">
+                    Комментарий
+                    <textarea name="comment" rows="4" placeholder="Дополнительные данные клиента, уточнения менеджера, ссылки на документы">{{ constraints.comment if constraints else '' }}</textarea>
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Сохранить дополнительные данные</button>
+                <a href="/admin/leads/{{ lead.id }}">Вернуться к карточке лида</a>
+            </div>
+        </form>
+    </section>
+
     {% if tasks %}
         <section class="tasks-block">
             <h2>Agent Tasks</h2>
@@ -375,6 +727,47 @@
                             <strong>Agent / Role:</strong>
                             {{ task.agent_type or "не указано" }}
                         </p>
+
+                        <p>
+                            <a href="/admin/leads/{{ lead.id }}/tasks/{{ task.id }}/input">
+                                Сформировать input block для этого этапа
+                            </a>
+                        </p>
+
+                        {% if task.stage in ai_run_allowed_stages %}
+    <form method="post"
+          action="/admin/tasks/{{ task.id }}/run-ai"
+          class="task-ai-form js-ai-run-form">
+
+        <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+        <button type="submit" class="ai-run-button">
+            <span class="ai-run-icon">⚡</span>
+            <span class="ai-run-text">
+                {% if task.status == "Done" %}
+                    Пересчитать через AI Agent
+                {% else %}
+                    Запустить AI Agent
+                {% endif %}
+            </span>
+        </button>
+    </form>
+
+    <div class="ai-run-hint">
+        {% if task.status == "Done" %}
+            AI Agent пересчитает результат с учётом новых данных и обновит Result / Next action.
+            Не закрывайте страницу до возврата в карточку лида.
+        {% else %}
+            AI Agent автоматически заполнит Result и Next action.
+            Не закрывайте страницу до возврата в карточку лида.
+        {% endif %}
+    </div>
+{% elif task.stage == "Client Delivery" %}
+    <p class="task-note">
+        Client Delivery выполняется вручную: отправьте итоговый отчёт / КП клиенту
+        и зафиксируйте дату, канал, реакцию и следующий шаг.
+    </p>
+{% endif %}
 
                         <p>
                             <strong>Stage:</strong>
@@ -411,20 +804,47 @@
                             {{ task.human_required or "не указано" }}
                         </p>
 
-                        <p>
-                            <strong>Next action:</strong><br>
-                            {{ task.next_action or "не указано" }}
-                        </p>
+                        <form method="post" action="/admin/tasks/{{ task.id }}/update" class="task-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                            <input type="hidden" name="stage" value="{{ task.stage }}">
 
-                        <p>
-                            <strong>Result:</strong><br>
-                            {{ task.result or "не указано" }}
-                        </p>
+                            <p>
+                                <strong>Task status</strong>
+                            </p>
 
-                        <p>
-                            <strong>Comment:</strong><br>
-                            {{ task.comment or "не указано" }}
-                        </p>
+                            <select name="status">
+                                {% for status in ["New", "In Progress", "Waiting for Client Info", "Ready for Intake Agent", "Waiting for Data", "Waiting for Human Review", "Done", "Blocked", "Cancelled"] %}
+                                    <option value="{{ status }}" {% if task.status == status %}selected{% endif %}>
+                                        {{ status }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                            <p>
+                                <strong>Result</strong>
+                            </p>
+                            <textarea name="result">{{ task.result or "" }}</textarea>
+
+                            <p>
+                                <strong>Next action</strong>
+                            </p>
+                            <textarea name="next_action">{{ task.next_action or "" }}</textarea>
+
+                            <p>
+                                <strong>Comment</strong>
+                            </p>
+                            <textarea name="comment">{{ task.comment or "" }}</textarea>
+
+                            {% if task.stage in ai_run_allowed_stages %}
+                                <button type="submit" class="task-save-button secondary">
+                                    Сохранить правки
+                                </button>
+                            {% else %}
+                                <button type="submit" class="task-save-button">
+                                    Сохранить задачу
+                                </button>
+                            {% endif %}
+                        </form>
 
                         <p class="task-meta">
                             Created: {{ task.created_at }} |
@@ -464,5 +884,35 @@
     </div>
 
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const forms = document.querySelectorAll(".js-ai-run-form");
+
+        forms.forEach(function (form) {
+            form.addEventListener("submit", function () {
+                const button = form.querySelector(".ai-run-button");
+                const text = form.querySelector(".ai-run-text");
+                const icon = form.querySelector(".ai-run-icon");
+
+                if (!button) {
+                    return;
+                }
+
+                button.classList.add("is-loading");
+                button.disabled = true;
+
+                if (text) {
+                    text.textContent = "AI Agent работает...";
+                }
+
+                if (icon) {
+                    icon.textContent = "⟳";
+                }
+            });
+        });
+    });
+</script>
+
 </body>
 </html>

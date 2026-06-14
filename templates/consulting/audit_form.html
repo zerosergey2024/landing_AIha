@@ -141,6 +141,97 @@
             </select>
         </label>
 
+        <h2>5. Экономика и метрики процесса</h2>
+
+<label>
+    Объём операций / заявок / документов в месяц
+    <input
+        type="text"
+        name="monthly_volume"
+        placeholder="Например: 700 заявок в месяц"
+        value="{{ form.monthly_volume if form else '' }}"
+    >
+</label>
+
+<label>
+    Среднее время обработки одной операции
+    <input
+        type="text"
+        name="avg_processing_time"
+        placeholder="Например: 5–7 минут на типовую заявку"
+        value="{{ form.avg_processing_time if form else '' }}"
+    >
+</label>
+
+<label>
+    Время на сложную операцию
+    <input
+        type="text"
+        name="complex_processing_time"
+        placeholder="Например: 15–20 минут"
+        value="{{ form.complex_processing_time if form else '' }}"
+    >
+</label>
+
+<label>
+    Сколько сотрудников участвует в процессе
+    <input
+        type="text"
+        name="employees_in_process"
+        placeholder="Например: 1 диспетчер + 5 исполнителей"
+        value="{{ form.employees_in_process if form else '' }}"
+    >
+</label>
+
+<label>
+    Стоимость часа сотрудника / ФОТ, если можно указать
+    <input
+        type="text"
+        name="hourly_cost"
+        placeholder="Например: 600 ₽/час или не готовы раскрывать"
+        value="{{ form.hourly_cost if form else '' }}"
+    >
+</label>
+
+<label>
+    Доля ошибок, просрочек, потерь или повторных обращений
+    <input
+        type="text"
+        name="error_delay_loss_rate"
+        placeholder="Например: 12–18% просрочек, 10–20 потерь в месяц"
+        value="{{ form.error_delay_loss_rate if form else '' }}"
+    >
+</label>
+
+<label>
+    Время на контроль, сверку, отчётность или ручной перенос данных
+    <input
+        type="text"
+        name="control_reporting_time"
+        placeholder="Например: 5 часов в неделю"
+        value="{{ form.control_reporting_time if form else '' }}"
+    >
+</label>
+
+<label>
+    Есть ли ориентир бюджета на аудит / MVP / внедрение
+    <input
+        type="text"
+        name="budget_details"
+        placeholder="Например: бюджет обсуждается после диагностики"
+        value="{{ form.budget_details if form else '' }}"
+    >
+</label>
+
+<label>
+    Какой эффект клиент считает ценным
+    <textarea
+        name="expected_business_effect"
+        rows="3"
+        placeholder="Например: меньше потерь, быстрее обработка, контроль сроков, снижение ручного труда"
+    >{{ form.expected_business_effect if form else '' }}</textarea>
+</label>
+
         <label>
             Дополнительный комментарий
             <textarea name="comment" rows="4"></textarea>

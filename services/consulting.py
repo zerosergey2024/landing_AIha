@@ -47,6 +47,35 @@ Email: {data.get("email", "").strip() or "не указано"}
 Готовность к MVP:
 {data.get("mvp_readiness", "").strip() or "не указано"}
 
+Экономика и метрики процесса:
+
+Объём операций в месяц:
+{data.get("monthly_volume", "").strip() or "не указано"}
+
+Среднее время обработки:
+{data.get("avg_processing_time", "").strip() or "не указано"}
+
+Время на сложную операцию:
+{data.get("complex_processing_time", "").strip() or "не указано"}
+
+Сотрудники в процессе:
+{data.get("employees_in_process", "").strip() or "не указано"}
+
+Стоимость часа / ФОТ:
+{data.get("hourly_cost", "").strip() or "не указано"}
+
+Ошибки / просрочки / потери:
+{data.get("error_delay_loss_rate", "").strip() or "не указано"}
+
+Контроль / отчётность / ручной перенос:
+{data.get("control_reporting_time", "").strip() or "не указано"}
+
+Бюджет:
+{data.get("budget_details", "").strip() or "не указано"}
+
+Ожидаемый бизнес-эффект:
+{data.get("expected_business_effect", "").strip() or "не указано"}
+
 Комментарий:
 {data.get("comment", "").strip() or "не указано"}
 """.strip()
@@ -78,9 +107,27 @@ def build_consulting_telegram_text(data: dict[str, str], lead_id: int) -> str:
 • Облако: {data.get("cloud_allowed", "").strip() or "Не указано"}
 
 📊 ROI-метрики: {data.get("roi_metrics_available", "").strip() or "Не указано"}
+📈 Объём: {data.get("monthly_volume", "").strip() or "Не указано"}
+⏱ Время обработки: {data.get("avg_processing_time", "").strip() or "Не указано"}
+⚠️ Ошибки/просрочки/потери: {data.get("error_delay_loss_rate", "").strip() or "Не указано"}
+💰 Бюджет: {data.get("budget_details", "").strip() or "Не указано"}
 🚀 MVP: {data.get("mvp_readiness", "").strip() or "Не указано"}
 
 🆔 Lead ID: {lead_id}
+""".strip()
+
+def build_roi_metrics_details(data: dict[str, str]) -> str:
+    """Собирает экономические метрики процесса в единый текстовый блок."""
+
+    return f"""
+Объём операций в месяц: {data.get("monthly_volume", "").strip() or "не указано"}
+Среднее время обработки: {data.get("avg_processing_time", "").strip() or "не указано"}
+Время на сложную операцию: {data.get("complex_processing_time", "").strip() or "не указано"}
+Сотрудники в процессе: {data.get("employees_in_process", "").strip() or "не указано"}
+Стоимость часа / ФОТ: {data.get("hourly_cost", "").strip() or "не указано"}
+Ошибки / просрочки / потери: {data.get("error_delay_loss_rate", "").strip() or "не указано"}
+Контроль / отчётность / ручной перенос: {data.get("control_reporting_time", "").strip() or "не указано"}
+Ожидаемый бизнес-эффект: {data.get("expected_business_effect", "").strip() or "не указано"}
 """.strip()
 
 
@@ -211,8 +258,10 @@ def save_client_constraints(lead_id: int, data: dict[str, str]) -> None:
                 data.get("security_policies", "").strip() or "не указано",
                 data.get("nda_required", "").strip() or "Нужно уточнить",
                 roi_metrics_available,
-                data.get("roi_metrics_details", "").strip() or "не указано",
-                data.get("budget_known", "").strip() or "Затрудняюсь ответить",
+                build_roi_metrics_details(data),
+                data.get("budget_details", "").strip()
+                or data.get("budget_known", "").strip()
+                or "Затрудняюсь ответить",
                 mvp_readiness,
                 data.get("scope_limitations", "").strip() or "не указано",
                 constraint_risk,

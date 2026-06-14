@@ -5,7 +5,37 @@ import sqlite3
 from db import DB_PATH
 
 
-def get_lead_with_constraints(lead_id: int) -> tuple[sqlite3.Row | None, sqlite3.Row | None]:
+TASK_SELECT_SQL = """
+    SELECT
+        id,
+        task_code,
+        lead_id,
+        company,
+        agent_type,
+        stage,
+        task_title,
+        input_source,
+        expected_output,
+        status,
+        priority,
+        owner,
+        human_required,
+        result,
+        next_action,
+        due_date,
+        comment,
+        created_at,
+        updated_at
+    FROM agent_tasks
+"""
+
+
+def get_lead_with_constraints(
+    lead_id: int,
+) -> tuple[sqlite3.Row | None, sqlite3.Row | None]:
+    """
+    Возвращает лид и последний блок client_constraints.
+    """
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
 
@@ -67,10 +97,16 @@ def get_lead_with_constraints(lead_id: int) -> tuple[sqlite3.Row | None, sqlite3
 
 
 def value(row: sqlite3.Row | None, key: str, default: str = "не указано") -> str:
+    """
+    Безопасно достаёт значение из sqlite3.Row.
+    """
     if row is None:
         return default
 
-    item = row[key]
+    try:
+        item = row[key]
+    except (KeyError, IndexError):
+        return default
 
     if item is None:
         return default
@@ -79,150 +115,105 @@ def value(row: sqlite3.Row | None, key: str, default: str = "не указано
     return text if text else default
 
 
-def build_intake_v33_input_block(lead: sqlite3.Row, constraints: sqlite3.Row | None) -> str:
-    return f"""
-Входные данные для Intake Agent v3.3:
+def extract_form_value(message: str, label: str) -> str:
+    """
+    Достаёт значение из сырого текста анкеты.
 
-1. Источник заявки
+    Поддерживает оба формата:
 
-Lead_ID: L-{int(lead["id"]):03d}
-Дата_заявки: {value(lead, "created_at")}
-Платформа_источник: {detect_platform_source(value(lead, "source"))}
-Канал_заявки: {detect_channel(value(lead, "source"))}
-Источник: {value(lead, "source")}
-Тип_заявки: {detect_request_type(value(lead, "source"), value(lead, "message"))}
+    1. Отрасль:
+       Строительство
 
-2. Компания и контакт
+    2. Отрасль: Строительство
+    """
+    if not message:
+        return "не указано"
 
-Компания: {value(lead, "company")}
-Контактное_лицо: {value(lead, "name")}
-Телефон: {value(lead, "phone")}
-Email: не указано
-Отрасль: {value(lead, "industry")}
-Размер_компании: не указано
+    lines = message.splitlines()
+    normalized_label = label.strip().lower().rstrip(":")
 
-3. Бизнес-запрос
+    for index, line in enumerate(lines):
+        raw_line = line.strip()
+        normalized_line = raw_line.lower()
 
-Краткая_боль:
-{value(lead, "message")}
+        inline_prefix = f"{normalized_label}:"
+        if normalized_line.startswith(inline_prefix):
+            inline_value = raw_line[len(inline_prefix):].strip()
+            if inline_value:
+                return inline_value
 
-Что клиент хочет решить:
-Нужно определить по тексту заявки. Возможные направления: аудит процесса, снижение ручного труда, контроль сроков, оценка данных, проверка AI-readiness, подготовка roadmap или MVP scope.
+        if normalized_line.rstrip(":") == normalized_label:
+            for next_line in lines[index + 1:]:
+                text = next_line.strip()
+                if text:
+                    return text
 
-Ожидаемый_результат:
-не указано
+    return "не указано"
 
-4. Процесс для аудита
 
-Процесс_для_аудита:
-{value(lead, "process")}
+def choose_source_value(primary: str, fallback: str) -> str:
+    """
+    Берёт значение из анкеты, если оно есть.
+    Иначе берёт структурированное поле лида.
+    """
+    primary = (primary or "").strip()
+    fallback = (fallback or "").strip()
 
-Краткое описание процесса:
-не указано
+    if primary and primary.lower() != "не указано":
+        return primary
 
-Участники процесса:
-не указано
+    if fallback and fallback.lower() != "не указано":
+        return fallback
 
-Ручные операции:
-не указано
+    return "не указано"
 
-Где возникают проблемы:
-не указано
 
-Есть ли регламент:
-не указано
+def get_lead_business_context(lead: sqlite3.Row) -> dict[str, str]:
+    """
+    Формирует единый источник истины для отрасли, процесса, боли и эффекта.
 
-5. Системы и данные
+    Приоритет:
+    1. значения из сырой анкеты;
+    2. структурированные поля lead;
+    3. "не указано".
+    """
+    raw_message = value(lead, "message")
 
-Текущие_системы:
-не указано
+    business_pain = choose_source_value(
+        extract_form_value(raw_message, "Бизнес-боль"),
+        value(lead, "message"),
+    )
 
-Какие данные есть:
-не указано
+    industry = choose_source_value(
+        extract_form_value(raw_message, "Отрасль"),
+        value(lead, "industry"),
+    )
 
-История_данных:
-не указано
+    process = choose_source_value(
+        extract_form_value(raw_message, "Процесс для аудита"),
+        value(lead, "process"),
+    )
 
-Объём_данных:
-не указано
+    expected_effect = choose_source_value(
+        extract_form_value(raw_message, "Ожидаемый бизнес-эффект"),
+        value(lead, "effect"),
+    )
 
-Качество данных:
-не указано
-
-Можно предоставить:
-не указано
-
-6. Ограничения, безопасность и персональные данные
-
-Есть_персональные_данные:
-{value(constraints, "has_personal_data")}
-
-Типы_персональных_данных:
-{value(constraints, "personal_data_types")}
-
-Можно_обезличить:
-{value(constraints, "can_anonymize")}
-
-Облако_допустимо:
-{value(constraints, "cloud_allowed")}
-
-Требования_к_локализации:
-{value(constraints, "localization_requirements")}
-
-Есть_политики_ИБ:
-{value(constraints, "security_policies")}
-
-Нужен_NDA:
-{value(constraints, "nda_required")}
-
-7. Метрики и экономика
-
-Есть_метрики_для_ROI:
-{value(constraints, "roi_metrics_available")}
-
-Какие_метрики_есть:
-{value(constraints, "roi_metrics_details")}
-
-Бюджет_известен:
-{value(constraints, "budget_known")}
-
-8. Ожидания по ИИ и MVP
-
-Клиент уже понимает, какое ИИ-решение хочет:
-{value(lead, "ai_type")}
-
-Потенциально интересные решения:
-не указано
-
-Готовность_к_MVP:
-{value(constraints, "mvp_readiness")}
-
-Ограничения_scope:
-{value(constraints, "scope_limitations")}
-
-9. Предпочтительный следующий шаг
-
-Удобный формат следующего шага:
-не указано
-
-Комментарий:
-Источник лида: {value(lead, "source")}.
-Статус лида: {value(lead, "status")}.
-Приоритет AI-квалификации: {value(lead, "priority")}.
-Риск ограничений: {value(constraints, "constraint_risk")}.
-Следующее действие по ограничениям: {value(constraints, "next_action")}.
-Комментарий по ограничениям: {value(constraints, "comment")}.
-""".strip()
+    return {
+        "business_pain": business_pain,
+        "industry": industry,
+        "process": process,
+        "ai_type": value(lead, "ai_type"),
+        "effect": expected_effect,
+        "priority": value(lead, "priority"),
+    }
 
 
 def detect_platform_source(source: str) -> str:
     if source == "aiha_consulting_audit_form":
         return "AIha Consulting"
 
-    if source in {"landing", "landing_form"}:
-        return "AIha Studio"
-
-    if source == "callback_widget":
+    if source in {"landing", "landing_form", "callback_widget"}:
         return "AIha Studio"
 
     return "не указано"
@@ -254,3 +245,869 @@ def detect_request_type(source: str, message: str) -> str:
         return "Внедрение ИИ-решения"
 
     return "Не определено"
+
+
+def get_task_for_lead(lead_id: int, task_id: int) -> sqlite3.Row | None:
+    """
+    Возвращает задачу по task_id и lead_id.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        return conn.execute(
+            f"""
+            {TASK_SELECT_SQL}
+            WHERE id = ?
+              AND lead_id = ?
+            """,
+            (task_id, lead_id),
+        ).fetchone()
+
+
+def get_latest_done_task_by_stage(lead_id: int, stage: str) -> sqlite3.Row | None:
+    """
+    Возвращает последнюю завершённую задачу по stage для лида.
+    Используется, чтобы подставлять результат предыдущего агента
+    в следующий input block.
+    """
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        return conn.execute(
+            f"""
+            {TASK_SELECT_SQL}
+            WHERE lead_id = ?
+              AND stage = ?
+              AND status = 'Done'
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (lead_id, stage),
+        ).fetchone()
+
+
+def build_task_input_block(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+) -> str:
+    """
+    Универсальный генератор входного блока по задаче workflow.
+
+    Активная модель AIha Consulting:
+    - Intake Completeness
+    - Risk Assessment
+    - Economics Assessment
+    - Final Output
+    - Client Delivery
+    """
+    stage = value(task, "stage")
+
+    if stage == "Intake Completeness":
+        return build_intake_completeness_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+
+    if stage == "Risk Assessment":
+        return build_risk_assessment_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+
+    if stage == "Economics Assessment":
+        return build_economics_assessment_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+
+    if stage == "Final Output":
+        return build_final_output_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+
+    if stage == "Client Delivery":
+        return build_client_delivery_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+
+    raise ValueError(f"Unknown active workflow stage: {stage}")
+
+
+def build_intake_completeness_input_block(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+) -> str:
+    context = get_lead_business_context(lead)
+
+    return f"""
+Входные данные для Intake Completeness Agent:
+
+1. Идентификация
+
+Lead_ID: L-{int(lead["id"]):03d}
+Task_ID: {value(task, "id")}
+Task_Code: {value(task, "task_code")}
+Дата_заявки: {value(lead, "created_at")}
+Компания: {value(lead, "company")}
+Контактное_лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+Источник: {value(lead, "source")}
+Платформа_источник: {detect_platform_source(value(lead, "source"))}
+Канал_заявки: {detect_channel(value(lead, "source"))}
+Тип_заявки: {detect_request_type(value(lead, "source"), value(lead, "message"))}
+
+2. Единый бизнес-контекст заявки
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Конкретный процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+AI-сценарий / ожидание:
+{context["ai_type"]}
+
+Ожидаемый эффект:
+{context["effect"]}
+
+Приоритет:
+{context["priority"]}
+
+Важно:
+Если структурированные поля лида противоречат исходной анкете клиента, приоритет имеет исходная анкета.
+Не добавляй альтернативную отрасль или процесс, если они явно не указаны в анкете.
+
+3. Проверка 7 базовых блоков
+
+1. Бизнес-боль:
+{context["business_pain"]}
+
+2. Конкретный процесс:
+{context["process"]}
+
+3. Объём / частота / масштаб:
+{value(constraints, "roi_metrics_details")}
+
+4. Данные / документы / примеры:
+Типы данных / ПДн: {value(constraints, "personal_data_types")}
+Можно обезличить: {value(constraints, "can_anonymize")}
+
+5. Текущие системы:
+Проверь по экономическим метрикам и дополнительным уточнениям.
+Если явно не указаны — отметь как недостающий блок.
+
+Экономические метрики / дополнительные уточнения:
+{value(constraints, "roi_metrics_details")}
+
+6. Владелец процесса / контакт:
+Контактное лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+
+7. Ожидаемый результат:
+Ожидаемый эффект: {context["effect"]}
+Экономика / метрики:
+{value(constraints, "roi_metrics_details")}
+
+4. Ограничения клиента
+
+Персональные данные:
+{value(constraints, "has_personal_data")}
+
+Типы ПДн:
+{value(constraints, "personal_data_types")}
+
+Можно обезличить:
+{value(constraints, "can_anonymize")}
+
+Облако допустимо:
+{value(constraints, "cloud_allowed")}
+
+Требования к локализации:
+{value(constraints, "localization_requirements")}
+
+Политики ИБ:
+{value(constraints, "security_policies")}
+
+NDA:
+{value(constraints, "nda_required")}
+
+Ограничения scope:
+{value(constraints, "scope_limitations")}
+
+Риск ограничений:
+{value(constraints, "constraint_risk")}
+
+Комментарий по ограничениям:
+{value(constraints, "comment")}
+
+5. Экономика и метрики
+
+ROI-метрики:
+{value(constraints, "roi_metrics_available")}
+
+Экономика и метрики процесса:
+{value(constraints, "roi_metrics_details")}
+
+Бюджет:
+{value(constraints, "budget_known")}
+
+Готовность к MVP:
+{value(constraints, "mvp_readiness")}
+
+6. Задача Intake Completeness
+
+Stage:
+{value(task, "stage")}
+
+Agent:
+{value(task, "agent_type")}
+
+Task:
+{value(task, "task_title")}
+
+Expected output:
+{value(task, "expected_output")}
+
+7. Что нужно получить
+
+Проверь, можно ли запускать аналитическую цепочку.
+
+Критерий:
+- если все 7 базовых блоков заполнены или достаточно понятны — можно переходить к Risk Assessment;
+- если хотя бы один критичный блок отсутствует — анализ запускать нельзя;
+- если блок заполнен частично — укажи, можно ли двигаться дальше с оговоркой или нужно добрать данные.
+
+8. Требуемый результат
+
+Сформируй результат для поля result задачи Intake Completeness:
+
+1. Intake Completeness Summary.
+2. Проверка 7 базовых блоков:
+   - блок;
+   - статус: заполнен / частично / не заполнен;
+   - комментарий.
+3. Проверка ограничений.
+4. Проверка экономики.
+5. Недостающие данные.
+6. Вопросы клиенту.
+7. Решение:
+   - READY_FOR_ANALYSIS
+   - NOT_READY_FOR_ANALYSIS
+8. Рекомендованный следующий шаг.
+
+Если анализ можно запускать, явно напиши:
+"Анкета достаточна для запуска Risk Assessment."
+
+Если анализ запускать нельзя, явно напиши:
+"Анализ запускать нельзя до дозаполнения анкеты."
+
+9. Жёсткое ограничение scope
+
+Оцени только процесс и отрасль из единого бизнес-контекста:
+
+Отрасль:
+{context["industry"]}
+
+Процесс:
+{context["process"]}
+
+Запрещено добавлять альтернативные процессы, отрасли или сценарии, которых нет в анкете клиента.
+""".strip()
+
+
+def build_risk_assessment_input_block(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+) -> str:
+    context = get_lead_business_context(lead)
+
+    intake_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Intake Completeness",
+    )
+
+    return f"""
+Входные данные для Risk Assessment Agent:
+
+1. Клиент
+
+Lead_ID: L-{int(lead["id"]):03d}
+Task_ID: {value(task, "id")}
+Task_Code: {value(task, "task_code")}
+Компания: {value(lead, "company")}
+Контактное_лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+Дата_заявки: {value(lead, "created_at")}
+Источник: {value(lead, "source")}
+
+2. Единый бизнес-контекст заявки
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+AI-сценарий / ожидание:
+{context["ai_type"]}
+
+Ожидаемый эффект:
+{context["effect"]}
+
+Важно:
+Если структурированные поля лида противоречат исходной анкете клиента, приоритет имеет исходная анкета.
+Не добавляй альтернативную отрасль или процесс, если они явно не указаны в анкете.
+
+3. Ограничения клиента
+
+Персональные данные:
+{value(constraints, "has_personal_data")}
+
+Типы ПДн:
+{value(constraints, "personal_data_types")}
+
+Можно обезличить:
+{value(constraints, "can_anonymize")}
+
+Облако допустимо:
+{value(constraints, "cloud_allowed")}
+
+Требования к локализации:
+{value(constraints, "localization_requirements")}
+
+Политики ИБ:
+{value(constraints, "security_policies")}
+
+NDA:
+{value(constraints, "nda_required")}
+
+Ограничения scope:
+{value(constraints, "scope_limitations")}
+
+Риск ограничений:
+{value(constraints, "constraint_risk")}
+
+Комментарий по ограничениям:
+{value(constraints, "comment")}
+
+4. Экономика и данные
+
+ROI-метрики:
+{value(constraints, "roi_metrics_available")}
+
+Экономические метрики:
+{value(constraints, "roi_metrics_details")}
+
+Бюджет:
+{value(constraints, "budget_known")}
+
+Готовность к MVP:
+{value(constraints, "mvp_readiness")}
+
+5. Результат Intake Completeness
+
+{value(intake_task, "result")}
+
+6. Задача Risk Assessment
+
+Stage:
+{value(task, "stage")}
+
+Agent:
+{value(task, "agent_type")}
+
+Task:
+{value(task, "task_title")}
+
+Expected output:
+{value(task, "expected_output")}
+
+7. Что нужно получить
+
+Сформируй развёрнутую карту рисков:
+- данные;
+- ПДн;
+- облако;
+- NDA;
+- ИБ;
+- интеграции;
+- экономика;
+- MVP;
+- организационные риски.
+
+Отдельно укажи:
+- что блокирует диагностику;
+- что не блокирует диагностику, но требует мер;
+- что блокирует MVP;
+- что блокирует точный ROI;
+- mitigation plan.
+
+8. Жёсткое ограничение scope
+
+Оцени риски только по процессу и отрасли из единого бизнес-контекста:
+
+Процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Не добавляй производственные, оборудовательные или складские процессы, если они явно не указаны во входных данных.
+
+Если процесс связан с обработкой клиентских заявок, оценивай риски вокруг:
+- обработки клиентских заявок;
+- SLA;
+- потерь заявок;
+- Excel / Telegram / 1C;
+- персональных данных клиента;
+- адресов объектов;
+- обезличивания;
+- интеграций и выгрузок.
+""".strip()
+
+
+def build_economics_assessment_input_block(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+) -> str:
+    context = get_lead_business_context(lead)
+
+    intake_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Intake Completeness",
+    )
+
+    risk_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Risk Assessment",
+    )
+
+    return f"""
+Входные данные для Economics Assessment Agent:
+
+1. Клиент
+
+Lead_ID: L-{int(lead["id"]):03d}
+Task_ID: {value(task, "id")}
+Task_Code: {value(task, "task_code")}
+Компания: {value(lead, "company")}
+Контактное_лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+Дата_заявки: {value(lead, "created_at")}
+Источник: {value(lead, "source")}
+
+2. Единый бизнес-контекст заявки
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+AI-сценарий / ожидание:
+{context["ai_type"]}
+
+Ожидаемый эффект:
+{context["effect"]}
+
+Важно:
+Если структурированные поля лида противоречат исходной анкете клиента, приоритет имеет исходная анкета.
+Не добавляй альтернативную отрасль или процесс, если они явно не указаны в анкете.
+
+3. Экономические исходные данные
+
+ROI-метрики:
+{value(constraints, "roi_metrics_available")}
+
+Экономика и метрики процесса:
+{value(constraints, "roi_metrics_details")}
+
+Бюджет:
+{value(constraints, "budget_known")}
+
+Готовность к MVP:
+{value(constraints, "mvp_readiness")}
+
+4. Ограничения клиента
+
+Персональные данные:
+{value(constraints, "has_personal_data")}
+
+Типы ПДн:
+{value(constraints, "personal_data_types")}
+
+Можно обезличить:
+{value(constraints, "can_anonymize")}
+
+Облако допустимо:
+{value(constraints, "cloud_allowed")}
+
+NDA:
+{value(constraints, "nda_required")}
+
+Политики ИБ:
+{value(constraints, "security_policies")}
+
+Ограничения scope:
+{value(constraints, "scope_limitations")}
+
+Риск ограничений:
+{value(constraints, "constraint_risk")}
+
+5. Результат Intake Completeness
+
+{value(intake_task, "result")}
+
+6. Результат Risk Assessment
+
+{value(risk_task, "result")}
+
+7. Задача Economics Assessment
+
+Stage:
+{value(task, "stage")}
+
+Agent:
+{value(task, "agent_type")}
+
+Task:
+{value(task, "task_title")}
+
+Expected output:
+{value(task, "expected_output")}
+
+8. Что нужно получить
+
+Сформируй управленческую экономическую оценку.
+
+Главный фокус:
+- было → станет;
+- часы;
+- деньги;
+- сокращение потерь;
+- сокращение просрочек;
+- ограничения расчёта;
+- что уточнить для точного ROI.
+
+Важно:
+Это предварительная оценка, а не бухгалтерский отчёт.
+Можно использовать реалистичные диапазоны и явно маркировать их как гипотезы.
+
+Если есть данные по объёму, времени обработки, стоимости часа, контролю, потерям и просрочкам — обязательно считай.
+Не ограничивайся процентной оценкой.
+
+9. Жёсткое ограничение scope
+
+Экономику считай только по процессу из единого бизнес-контекста:
+
+Процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Не добавляй альтернативные процессы, отрасли или сценарии, которых нет в анкете клиента.
+Если в результатах предыдущих этапов есть противоречие, приоритет имеет единый бизнес-контекст заявки.
+""".strip()
+
+
+def build_final_output_input_block(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+) -> str:
+    context = get_lead_business_context(lead)
+
+    intake_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Intake Completeness",
+    )
+
+    risk_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Risk Assessment",
+    )
+
+    economics_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Economics Assessment",
+    )
+
+    return f"""
+Входные данные для Final Output Agent:
+
+1. Клиент
+
+Lead_ID: L-{int(lead["id"]):03d}
+Task_ID: {value(task, "id")}
+Task_Code: {value(task, "task_code")}
+Компания: {value(lead, "company")}
+Контактное_лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+Дата_заявки: {value(lead, "created_at")}
+Источник: {value(lead, "source")}
+
+2. Единый бизнес-контекст заявки
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+AI-сценарий / ожидание:
+{context["ai_type"]}
+
+Ожидаемый эффект:
+{context["effect"]}
+
+Важно:
+Если структурированные поля лида противоречат исходной анкете клиента, приоритет имеет исходная анкета.
+Не добавляй альтернативную отрасль или процесс, если они явно не указаны в анкете.
+
+3. Ограничения клиента
+
+Персональные данные:
+{value(constraints, "has_personal_data")}
+
+Типы ПДн:
+{value(constraints, "personal_data_types")}
+
+Можно обезличить:
+{value(constraints, "can_anonymize")}
+
+Облако допустимо:
+{value(constraints, "cloud_allowed")}
+
+NDA:
+{value(constraints, "nda_required")}
+
+Политики ИБ:
+{value(constraints, "security_policies")}
+
+Ограничения scope:
+{value(constraints, "scope_limitations")}
+
+Риск ограничений:
+{value(constraints, "constraint_risk")}
+
+4. Экономические исходные данные
+
+ROI-метрики:
+{value(constraints, "roi_metrics_available")}
+
+Экономика и метрики процесса:
+{value(constraints, "roi_metrics_details")}
+
+Бюджет:
+{value(constraints, "budget_known")}
+
+Готовность к MVP:
+{value(constraints, "mvp_readiness")}
+
+5. Результат Intake Completeness
+
+{value(intake_task, "result")}
+
+6. Результат Risk Assessment
+
+{value(risk_task, "result")}
+
+7. Результат Economics Assessment
+
+{value(economics_task, "result")}
+
+8. Обязательный экономический фокус для итогового отчёта
+
+В итоговом отчёте обязательно показать состав потенциального эффекта:
+
+- экономия трудозатрат;
+- снижение потерь заявок;
+- итоговый потенциальный эффект в месяц;
+- итоговый потенциальный эффект в год.
+
+Если во входных данных есть стоимость одной потерянной заявки, использовать её для расчёта потерь.
+
+Расчёт должен быть основан на фактических данных анкеты и Economics Assessment.
+Не копируй примерные цифры из инструкции, если они не соответствуют данным лида.
+
+Формула:
+итоговый потенциальный эффект = экономия трудозатрат + снижение потерь заявок.
+
+Не называй это гарантированным ROI.
+Это предварительный управленческий потенциал.
+
+9. Коммерческие условия AIha Consulting для следующего этапа
+
+Тип:
+Экспресс-диагностика данных и подготовка MVP scope.
+
+Стоимость:
+150 000 ₽.
+
+Срок:
+10 рабочих дней.
+
+Формат:
+Онлайн-интервью + анализ материалов.
+
+Deliverables:
+- уточнённая экономика;
+- карта рисков;
+- MVP scope;
+- список данных и интеграций;
+- решение go / no-go.
+
+10. Задача Final Output
+
+Stage:
+{value(task, "stage")}
+
+Agent:
+{value(task, "agent_type")}
+
+Task:
+{value(task, "task_title")}
+
+Expected output:
+{value(task, "expected_output")}
+
+11. Что нужно получить
+
+Сформируй клиентский итоговый документ.
+
+Главный фокус:
+- деньги;
+- часы;
+- потери;
+- риски;
+- конкретный следующий шаг;
+- КП на следующий этап, если оно уместно.
+
+Не пересказывай анкету.
+Не ограничивайся рекомендациями "рассмотреть".
+Не отправляй клиента на уже выполненные этапы Risk Assessment или Economics Assessment.
+
+12. Жёсткое ограничение scope
+
+Финальный документ формируй только по процессу из единого бизнес-контекста:
+
+Процесс:
+{context["process"]}
+
+Отрасль:
+{context["industry"]}
+
+Бизнес-боль:
+{context["business_pain"]}
+
+Если результаты предыдущих этапов противоречат этому контексту, приоритет имеет единый бизнес-контекст заявки.
+Не добавляй альтернативные процессы, отрасли или сценарии, которых нет в анкете клиента.
+""".strip()
+
+
+def build_client_delivery_input_block(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+) -> str:
+    final_output_task = get_latest_done_task_by_stage(
+        lead_id=int(lead["id"]),
+        stage="Final Output",
+    )
+
+    lead_id = int(lead["id"])
+
+    return f"""
+Delivery-блок для менеджера:
+
+1. Клиент
+
+Lead_ID: L-{lead_id:03d}
+Компания: {value(lead, "company")}
+Контактное_лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+Email: проверьте в карточке заявки / тексте заявки
+Источник: {value(lead, "source")}
+
+2. Что отправляем клиенту
+
+Откройте очищенную клиентскую версию документа:
+/admin/leads/{lead_id}/final
+
+Полный рабочий результат Final Output сохранён в задаче:
+{value(final_output_task, "result")}
+
+3. Что нужно сделать менеджеру
+
+1. Открыть /admin/leads/{lead_id}/final.
+2. Скопировать или скачать итоговый отчёт / КП.
+3. Проверить, что в тексте нет:
+   - обещаний гарантированного ROI;
+   - обещаний MVP без согласования scope;
+   - автоматического перехода в AIha Studio;
+   - обработки реальных ПДн без NDA / обезличивания / согласования.
+4. Отправить клиенту итоговый отчёт / КП.
+5. Зафиксировать:
+   - дату отправки;
+   - канал отправки;
+   - кому отправлено;
+   - реакцию клиента;
+   - следующий коммерческий шаг.
+
+4. Рекомендуемый шаблон результата для поля result
+
+Отчёт / КП отправлены клиенту.
+Дата отправки: [указать дату].
+Канал отправки: [email / Telegram / встреча / другое].
+Получатель: {value(lead, "name")}.
+Реакция клиента: [указать].
+Следующий шаг: [указать].
+Комментарий менеджера: [указать].
+
+5. Задача
+
+Stage:
+{value(task, "stage")}
+
+Task:
+{value(task, "task_title")}
+
+Expected output:
+{value(task, "expected_output")}
+""".strip()
