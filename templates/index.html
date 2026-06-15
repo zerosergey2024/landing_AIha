@@ -3,52 +3,58 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AIha Студия — AI-интеграция для производственных и хозяйственных процессов</title>
-  <meta name="description" content="AIha Студия встраивает AI в реальные процессы компании: снижение издержек, рост производительности труда, прозрачный контроль операций.">
+  <title>AIha Ecosystem — AIha Студия</title>
+  <meta name="description" content="AIha Ecosystem: AIha Студия и AIha Consulting для диагностики, автоматизации и внедрения AI в реальные процессы компании.">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<footer class="site-footer">
-  <div class="site-footer__inner">
-    <p>
-      AIha проектирует решения с приоритетом локального хранения и контролируемой обработки данных.
-    </p>
-  </div>
-</footer>
+
 <body>
   <div class="page-glow"></div>
+
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="AIha Студия">
-      <img src="{{ url_for('static', filename='img/aiha-logo-oval.png') }}" alt="AIha Студия" class="brand__logo">
+    <a class="brand" href="#top" aria-label="AIha Ecosystem">
+      <img src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}" alt="AIha Ecosystem" class="brand__logo">
     </a>
+
     <nav class="nav" aria-label="Основная навигация">
       <a href="#for-whom">Для кого</a>
       <a href="#solutions">Что решаем</a>
       <a href="#process">Внедрение</a>
       <a href="#difference">Отличие</a>
+      <a href="/consulting/audit">AI-аудит</a>
       <a href="#contact">Заявка</a>
     </nav>
+
     <button class="header-cta" type="button" id="headerCallback">Обратный звонок</button>
   </header>
 
   <main id="top">
     <section class="hero section">
       <div class="hero__content">
-        <p class="eyebrow">AI-интеграция для реальных процессов</p>
+        <p class="eyebrow">AIha Ecosystem · AIha Студия</p>
         <h2>Встраиваем AI в производство, хозяйственные процессы и инфраструктуру</h2>
-        <p class="lead">AIha не просто подключает нейросети — студия встраивает AI в реальные процессы компании, чтобы снизить издержки, ускорить работу и дать руководителю прозрачный контроль.</p>
+        <p class="lead">
+          AIha не просто подключает нейросети — студия встраивает AI в реальные процессы компании,
+          чтобы снизить издержки, ускорить работу и дать руководителю прозрачный контроль.
+        </p>
+
         <div class="hero__actions">
           <a class="button button--primary" href="#contact">Обсудить проект</a>
-          <button class="button button--ghost" id="callWidgetOpen" type="button">Заказать звонок</button>
+          <a class="button button--ghost" href="/consulting/audit">Пройти первичный AI-аудит</a>
         </div>
+
         <div class="hero__metrics" aria-label="Ключевые выгоды">
           <div><strong>Контроль</strong><span>единая картина операций, заявок, отклонений и ответственных действий</span></div>
           <div><strong>Экономия</strong><span>снижение ручного труда, потерь времени и стоимости типовых операций</span></div>
           <div><strong>Рост</strong><span>повышение производительности труда за счёт автоматизации рутины</span></div>
         </div>
       </div>
+
       <div class="hero__card glass-card">
         <img class="hero__logo" src="{{ url_for('static', filename='img/aiha-logo-oval.png') }}" alt="Логотип AIha Студия">
         <div class="ai-panel">
@@ -58,124 +64,18 @@
       </div>
     </section>
 
-    <section class="section split" id="for-whom">
-      <div>
-        <p class="eyebrow">Для кого</p>
-        <h2>Работаем там, где важны управляемость, безопасность и измеримый результат</h2>
-      </div>
-      <div class="cards-grid cards-grid--3">
-        <article class="glass-card mini-card">
-          <h3>Производственные предприятия</h3>
-          <p>Контроль оборудования, анализ простоев, цифровые схемы, поддержка диспетчеров, инженеров и руководителей смен.</p>
-        </article>
-        <article class="glass-card mini-card">
-          <h3>Эксплуатация и хозяйственные процессы</h3>
-          <p>Обработка заявок, контроль исполнения, прогнозирование нагрузки, аналитика обращений и ресурсных затрат.</p>
-        </article>
-        <article class="glass-card mini-card">
-          <h3>Инфраструктурные проекты</h3>
-          <p>Мониторинг объектов, повышение скорости реагирования, снижение аварийных рисков и прозрачность управленческих решений.</p>
-        </article>
-      </div>
-    </section>
+    <!-- остальной main оставь как есть -->
 
-    <section class="section problem-solution" id="solutions">
-      <div class="glass-card problem-card">
-        <p class="eyebrow">Что решаем</p>
-        <h2>Данные есть, но процессы всё ещё управляются вручную</h2>
-        <p>Во многих организациях уже есть заявки, журналы, отчёты, датчики, регламенты и внутренние базы. Но данные разрознены, решения принимаются вручную, а потери становятся заметны только после сбоя, простоя или перегрузки сотрудников.</p>
-        <p>AIha связывает эти элементы в прикладные AI-сценарии: автоматизирует рутинные действия, помогает анализировать причины отклонений и делает процессы прозрачными для руководителей, диспетчеров и специалистов.</p>
-      </div>
-      <div class="solution-list">
-        <div class="solution-item"><span>01</span><p>Снижаем ручной труд: сортировку заявок, первичный анализ, подготовку ответов, поиск информации в регламентах и отчётах.</p></div>
-        <div class="solution-item"><span>02</span><p>Помогаем видеть отклонения: где процесс остановился, почему возникла задержка и какие действия нужны для восстановления.</p></div>
-        <div class="solution-item"><span>03</span><p>Собираем единую картину процесса: панели, схемы, отчёты, уведомления и AI-помощники для рабочих ролей.</p></div>
-        <div class="solution-item"><span>04</span><p>Ориентируем внедрение на показатели: время реакции, загрузка персонала, производительность, простои, ошибки и стоимость операции.</p></div>
-      </div>
-    </section>
-
-    <section class="section" id="process">
-      <p class="eyebrow">Как проходит внедрение</p>
-      <h2 class="section-title">От диагностики процесса до работающего AI-контура</h2>
-      <div class="solution-list process-list">
-        <div class="solution-item"><span>01</span><p><strong>Диагностика процесса.</strong> Определяем, где теряются время, деньги и управляемость.</p></div>
-        <div class="solution-item"><span>02</span><p><strong>Проектирование AI-сценария.</strong> Описываем, какие действия можно автоматизировать, какие данные нужны и какой эффект ожидается.</p></div>
-        <div class="solution-item"><span>03</span><p><strong>Прототипирование.</strong> Быстро собираем рабочий демонстрационный контур: интерфейс, AI-логику, интеграции, отчётность.</p></div>
-        <div class="solution-item"><span>04</span><p><strong>Интеграция в рабочую среду.</strong> Интегрируем AI-решения с CRM, Telegram, внутренними базами, панелями мониторинга, сервисами уведомлений и корпоративными регламентами.</p></div>
-        <div class="solution-item"><span>05</span><p><strong>Оценка эффекта.</strong> Фиксируем показатели до и после: скорость реакции, трудозатраты, простои, ошибки и стоимость операции.</p></div>
-      </div>
-    </section>
-
-    <section class="section" id="difference">
-      <p class="eyebrow">Отличие от конкурентов</p>
-      <h2 class="section-title">Не «просто бот», а связанный AI-процесс с понятной экономикой</h2>
-      <div class="cards-grid cards-grid--4">
-        <article class="glass-card mini-card accent-card">
-          <h3>От процесса, а не от технологии</h3>
-          <p>Сначала разбираем производственную или хозяйственную задачу, затем подбираем AI-инструменты.</p>
-        </article>
-        <article class="glass-card mini-card accent-card">
-          <h3>Интеграция в существующую среду</h3>
-          <p>Подключаем решения к рабочим каналам, внутренним системам, базам данных, регламентам и операционным контурам.</p>
-        </article>
-        <article class="glass-card mini-card accent-card">
-          <h3>Понятный результат</h3>
-          <p>Фокусируемся на управляемости, экономии времени, снижении издержек и росте производительности.</p>
-        </article>
-        <article class="glass-card mini-card accent-card">
-          <h3>Защищённые контуры</h3>
-          <p>Для чувствительных процессов используем предобученные локальные или изолированные AI-модели без раскрытия внутренних данных.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section start-work" id="start-work">
-      <div class="glass-card start-card">
-        <p class="eyebrow">Как начинается работа</p>
-        <h2>Сначала — короткое обсуждение задачи, затем понятный следующий шаг</h2>
-        <div class="start-steps">
-          <div><strong>01</strong><span>Вы оставляете заявку и кратко описываете процесс, задачу или проблему.</span></div>
-          <div><strong>02</strong><span>Мы уточняем детали: ограничения, данные, участников процесса и ожидаемый эффект.</span></div>
-          <div><strong>03</strong><span>Оцениваем потенциал AI-внедрения: где можно снизить издержки, ускорить операции или повысить прозрачность контроля.</span></div>
-          <div><strong>04</strong><span>Предлагаем следующий шаг: прототип, аудит процесса или проектное внедрение.</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section contact" id="contact">
-      <div class="contact__text">
-        <p class="eyebrow">Заявка</p>
-        <h2>Оставьте заявку — обсудим, где AI даст практический эффект в вашем процессе</h2>
-        <p>После заявки мы свяжемся с вами, уточним контекст и предложим формат первого шага: консультация, аудит процесса, прототип или проектное внедрение.</p>
-      </div>
-      <form class="lead-form glass-card" id="leadForm" method="post" action="/api/leads">
-        <label>Имя<input name="name" placeholder="Иван" required></label>
-        <label>Телефон<input name="phone" placeholder="+7 999 000-00-00" required></label>
-        <label>Компания<input name="company" placeholder="Название компании"></label>
-        <label>Что хотите улучшить или автоматизировать?<textarea name="message" placeholder="Например: контроль оборудования, заявки, отчёты, простои, регламенты, диспетчеризация"></textarea></label>
-        <input type="hidden" name="source" value="landing_form">
-        <button class="button button--primary" type="submit">Отправить заявку</button>
-        <p class="form-status" id="formStatus" role="status"></p>
-      </form>
-    </section>
-
-    <section class="section telegram-note" aria-label="Дополнительный контакт">
-      <p>
-        Дополнительный канал связи:
-        <a href="https://t.me/AIha_studia_bot" target="_blank" rel="noopener">
-        Telegram-бот AIha
-        </a>
-        — можно описать задачу и оставить контакт для связи.
-      </p>
-    </section>
   </main>
 
   <button class="callback-float" type="button" id="callbackFloat" aria-label="Заказать обратный звонок">☎</button>
+
   <div class="callback-modal" id="callbackModal" aria-hidden="true">
     <div class="callback-modal__panel glass-card">
       <button class="modal-close" type="button" id="modalClose" aria-label="Закрыть">×</button>
       <h3>Обратный звонок</h3>
       <p>Оставьте телефон — мы перезвоним и уточним задачу для первичного обсуждения AI-внедрения.</p>
+
       <form id="callbackForm" class="callback-form" method="post" action="/api/callback">
         <input name="name" placeholder="Имя" required>
         <input name="phone" placeholder="Телефон" required>
@@ -185,6 +85,14 @@
       </form>
     </div>
   </div>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <p>
+        AIha Ecosystem проектирует решения с приоритетом локального хранения и контролируемой обработки данных.
+      </p>
+    </div>
+  </footer>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

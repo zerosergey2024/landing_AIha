@@ -77,6 +77,20 @@
             align-items: center;
         }
 
+         .consulting-brand {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+         }
+
+         .consulting-brand__logo {
+            width: 230px;
+            height: auto;
+            display: block;
+            border-radius: 14px;
+            filter: drop-shadow(0 14px 28px rgba(34, 114, 255, 0.18));
+}
+
         .eyebrow {
             color: var(--accent);
             font-weight: 700;
@@ -274,14 +288,22 @@
 <body>
 
 <header>
-    <div class="container nav">
-        <div class="logo">AIha Consulting</div>
+    <div class="container">
+        <div class="nav">
+            <a class="consulting-brand" href="/consulting" aria-label="AIha Consulting">
+                <img
+                    src="{{ url_for('static', filename='img/aiha-consulting-logo.png') }}"
+                    alt="AIha Consulting"
+                    class="consulting-brand__logo"
+                >
+            </a>
 
-        <nav class="nav-links">
-            <a href="/">AIha Ecosystem</a>
-            <a href="/studio">AIha Studio</a>
-            <a href="/consulting/audit">Пройти аудит</a>
-        </nav>
+            <div class="nav-links">
+                <a href="/">← AIha Ecosystem</a>
+                <a href="/consulting/audit">Первичный AI-аудит</a>
+                <a href="/studio">AIha Studio</a>
+            </div>
+        </div>
     </div>
 </header>
 

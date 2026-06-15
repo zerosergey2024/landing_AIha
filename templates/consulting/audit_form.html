@@ -4,16 +4,189 @@
     <meta charset="UTF-8">
     <title>Первичный AI-аудит — AIha Consulting</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+            line-height: 1.5;
+        }
+
+        .audit-page {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 40px 20px 64px;
+        }
+
+        .audit-card {
+            background: #ffffff;
+            border: 1px solid #e1e7f0;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.10);
+        }
+
+        .audit-header {
+            display: grid;
+            grid-template-columns: 230px 1fr;
+            gap: 28px;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 26px;
+            border-bottom: 1px solid #e5ebf3;
+        }
+
+        .audit-logo {
+            width: 220px;
+            height: auto;
+            display: block;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 42px;
+            line-height: 1.1;
+            color: #0f172a;
+        }
+
+        .audit-header p {
+            margin: 0;
+            color: #5b667a;
+            font-size: 18px;
+        }
+
+        .audit-info {
+            margin: 24px 0 34px;
+            padding: 18px 20px;
+            border-radius: 18px;
+            background: #eef6ff;
+            border: 1px solid #cfe3ff;
+            color: #24364f;
+        }
+
+        main form {
+            display: grid;
+            gap: 18px;
+        }
+
+        h2 {
+            margin: 34px 0 4px;
+            padding: 18px 20px;
+            border-radius: 18px;
+            background: #f8fafc;
+            border: 1px solid #e1e7f0;
+            border-left: 6px solid #2272ff;
+            color: #0f172a;
+            font-size: 26px;
+        }
+
+        h2:nth-of-type(3) {
+            background: #fff8f1;
+            border-color: #ffd9b0;
+            border-left-color: #f59e0b;
+        }
+
+        h2:nth-of-type(4),
+        h2:nth-of-type(5) {
+            background: #eef6ff;
+            border-color: #c7dcff;
+            border-left-color: #2272ff;
+        }
+
+        label {
+            display: grid;
+            gap: 7px;
+            font-weight: 700;
+            color: #263244;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border: 1px solid #cfd8e6;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #111827;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 96px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #2272ff;
+            box-shadow: 0 0 0 4px rgba(34, 114, 255, 0.12);
+        }
+
+        button {
+            margin-top: 24px;
+            padding: 15px 24px;
+            border: 0;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #2272ff, #8a2cff);
+            color: #ffffff;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        @media (max-width: 760px) {
+            .audit-card {
+                padding: 24px;
+            }
+
+            .audit-header {
+                grid-template-columns: 1fr;
+            }
+
+            .audit-logo {
+                width: 190px;
+            }
+
+            h1 {
+                font-size: 34px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<header>
-    <h1>Первичный AI-аудит</h1>
-    <p>
-        Ответьте на несколько вопросов. Это поможет понять,
-        какой формат диагностики подходит вашей компании.
-    </p>
-</header>
+<div class="audit-page">
+    <div class="audit-card">
+
+        <header class="audit-header">
+            <a href="/consulting" class="audit-logo-link">
+                <img
+                    src="{{ url_for('static', filename='img/aiha-consulting-logo.png') }}"
+                    alt="AIha Consulting"
+                    class="audit-logo"
+                >
+            </a>
+
+            <div>
+                <h1>Первичный AI-аудит</h1>
+                <p>
+                    Ответьте на вопросы. Это поможет понять,
+                    какой формат диагностики подходит вашей компании.
+                </p>
+            </div>
+        </header>
+
+        <div class="audit-info">
+            <strong>Важно:</strong>
+            чем подробнее заполнена форма, тем точнее будут оценка рисков,
+            экономика, рекомендации по автоматизации / ИИ и предварительный scope следующего этапа.
+        </div>
 
 <main>
     <form method="POST" action="/consulting/audit">
@@ -240,6 +413,8 @@
         <button type="submit">Отправить заявку на аудит</button>
     </form>
 </main>
+    </div>
+</div>
 
 </body>
 </html>

@@ -1,24 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>AIha Ecosystem</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AIha Ecosystem: аудит, диагностика, автоматизация и внедрение ИИ-решений для бизнеса.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3">
 </head>
-<body>
 
-<header>
-    <h1>AIha Ecosystem</h1>
-    <p>Аудит, диагностика, автоматизация и внедрение ИИ-решений для бизнеса.</p>
+<body>
+<div class="page-glow"></div>
+
+<header class="site-header">
+    <a class="brand" href="/" aria-label="AIha Ecosystem">
+        <img src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}" alt="AIha Ecosystem" class="brand__logo">
+    </a>
+
+    <nav class="nav" aria-label="Основная навигация">
+        <a href="/studio">AIha Studio</a>
+        <a href="/consulting">AIha Consulting</a>
+        <a href="/consulting/audit">Первичный AI-аудит</a>
+    </nav>
+
+    <a class="header-cta" href="/consulting/audit">Начать диагностику</a>
 </header>
 
-<main>
-    <section>
-        <h2>Выберите направление</h2>
+<main id="top">
+    <section class="hero section">
+        <div class="hero__content">
+            <p class="eyebrow">AIha Ecosystem</p>
+            <h2>Аудит, диагностика, автоматизация и внедрение ИИ-решений для бизнеса</h2>
+            <p class="lead">
+                AIha Ecosystem объединяет два направления: AIha Consulting для диагностики процессов,
+                данных и экономики, и AIha Studio для проектирования, MVP и внедрения AI-решений.
+            </p>
 
-        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+            <div class="hero__actions">
+                <a class="button button--primary" href="/consulting/audit">Пройти первичный AI-аудит</a>
+                <a class="button button--ghost" href="/studio">Перейти в AIha Studio</a>
+            </div>
 
-            <article style="border: 1px solid #ddd; padding: 24px; border-radius: 16px;">
+            <div class="hero__metrics">
+                <div>
+                    <strong>Consulting</strong>
+                    <span>аудит процессов, данных, рисков, экономики и AI-readiness</span>
+                </div>
+                <div>
+                    <strong>Studio</strong>
+                    <span>AI-агенты, RAG, MVP, интеграции, автоматизация и внедрение</span>
+                </div>
+                <div>
+                    <strong>Effect</strong>
+                    <span>управляемость, снижение потерь, экономия времени и прозрачный контроль</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero__card glass-card">
+            <img class="hero__logo" src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}" alt="AIha Ecosystem">
+            <div class="ai-panel">
+                <span class="status-dot"></span>
+                <span>Диагностика → scope → MVP → внедрение</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <p class="eyebrow">Выберите направление</p>
+        <h2 class="section-title">Два маршрута внутри одной экосистемы</h2>
+
+        <div class="cards-grid cards-grid--2 ecosystem-grid">
+            <article class="glass-card mini-card ecosystem-card">
                 <h3>AIha Studio</h3>
                 <p>
                     Внедрение ИИ-решений: AI-агенты, RAG-системы, AI-диспетчеры,
@@ -28,10 +80,10 @@
                     Подходит, если вы уже понимаете, какой процесс хотите автоматизировать
                     или готовы обсуждать MVP после диагностики.
                 </p>
-                <a href="/studio">Перейти в AIha Studio</a>
+                <a class="button button--primary" href="/studio">Перейти в AIha Studio</a>
             </article>
 
-            <article style="border: 1px solid #ddd; padding: 24px; border-radius: 16px;">
+            <article class="glass-card mini-card ecosystem-card">
                 <h3>AIha Consulting</h3>
                 <p>
                     Аудит процессов, диагностика данных, поиск узких мест,
@@ -41,21 +93,39 @@
                     Подходит, если нужно сначала понять, где ИИ действительно нужен,
                     а где достаточно оптимизации процесса.
                 </p>
-                <a href="/consulting">Пройти аудит / диагностику</a>
+                <a class="button button--primary" href="/consulting">Пройти аудит / диагностику</a>
             </article>
-
         </div>
     </section>
 
-    <section style="margin-top: 40px;">
-        <h2>Как связаны Studio и Consulting</h2>
-        <p>
-            Каждый проект внедрения AIha Studio проходит диагностический контур AIha Consulting.
-            При этом AIha Consulting может быть самостоятельной услугой: не каждый аудит
-            обязан переходить во внедрение ИИ.
-        </p>
+    <section class="section start-work">
+        <div class="glass-card start-card">
+            <p class="eyebrow">Связь направлений</p>
+            <h2>Consulting может быть самостоятельной услугой или входом в Studio</h2>
+            <p class="lead">
+                Каждый проект внедрения AIha Studio проходит диагностический контур AIha Consulting.
+                При этом AIha Consulting не обязан завершаться внедрением ИИ: иногда достаточно
+                карты рисков, экономики, регламента, data profiling или roadmap автоматизации.
+            </p>
+
+            <div class="start-steps">
+                <div><strong>01</strong><span>Фиксируем процесс, боль, данные и ограничения.</span></div>
+                <div><strong>02</strong><span>Считаем экономику, риски и потенциал автоматизации.</span></div>
+                <div><strong>03</strong><span>Определяем, нужен ли MVP и какой scope реалистичен.</span></div>
+                <div><strong>04</strong><span>Передаём проект в Studio только если есть подтверждённый смысл.</span></div>
+            </div>
+        </div>
     </section>
 </main>
+
+<footer class="site-footer">
+    <div class="site-footer__inner">
+        <p>
+            AIha Ecosystem проектирует решения с приоритетом локального хранения,
+            контролируемой обработки данных и измеримого бизнес-эффекта.
+        </p>
+    </div>
+</footer>
 
 </body>
 </html>
