@@ -5,6 +5,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROMPTS_DIR = BASE_DIR / "prompts"
+AGENTS_DIR = PROMPTS_DIR / "agents"
 
 
 STAGE_PROMPT_FILES = {
@@ -46,6 +47,31 @@ def load_system_prompt() -> str:
     Загружает общий system prompt для AIha workflow agent.
     """
     return load_prompt("system/aiha_workflow_agent.txt")
+
+def load_agent_prompt(agent_name: str) -> str:
+    """
+    Загружает prompt агента из:
+
+    prompts/agents/<agent_name>.txt
+
+    Пример:
+
+    load_agent_prompt("mvp_design")
+
+    =>
+    prompts/agents/mvp_design.txt
+    """
+
+    prompt_path = AGENTS_DIR / f"{agent_name}.txt"
+
+    if not prompt_path.exists():
+        raise FileNotFoundError(
+            f"Agent prompt not found: {prompt_path}"
+        )
+
+    return prompt_path.read_text(
+        encoding="utf-8"
+    ).strip()
 
 
 def load_stage_prompt(stage: str) -> str:

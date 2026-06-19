@@ -192,3 +192,44 @@ def run_ai_agent_for_task(task_id: int) -> dict[str, object]:
         "stage": stage,
         "next_task_id": next_task_id,
     }
+
+def run_agent_with_prompt(
+    agent_prompt_name: str,
+    user_input: str,
+) -> str:
+    """
+    Универсальный запуск агента по prompt-файлу из prompts/agents/.
+
+    Пример:
+    run_agent_with_prompt(
+        agent_prompt_name="mvp_design",
+        user_input="..."
+    )
+
+    Ожидаемый файл:
+    prompts/agents/mvp_design.txt
+    """
+    from openai import OpenAI
+
+    from services.prompt_loader import load_agent_prompt
+
+    client = OpenAI()
+
+    system_prompt = load_agent_prompt(agent_prompt_name)
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt,
+            },
+            {
+                "role": "user",
+                "content": user_input,
+            },
+        ],
+        temperature=0.2,
+    )
+
+    return response.choices[0].message.content or ""

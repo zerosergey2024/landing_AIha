@@ -50,14 +50,31 @@
             line-height: 1.6;
         }
 
-        .alert-error {
+        .alert-error,
+        .alert-success,
+        .alert-info {
             margin: 16px 0 22px;
             padding: 14px 16px;
+            border-radius: 12px;
+            white-space: pre-wrap;
+        }
+
+        .alert-error {
             border: 1px solid #7f2b3a;
             background: #2a1220;
             color: #ffd0d8;
-            border-radius: 12px;
-            white-space: pre-wrap;
+        }
+
+        .alert-success {
+            border: 1px solid #277a58;
+            background: #10251e;
+            color: #baf7dc;
+        }
+
+        .alert-info {
+            border: 1px solid #2c5d8f;
+            background: #101d33;
+            color: #c8e4ff;
         }
 
         .top-links {
@@ -320,14 +337,19 @@
             color: #d9e4ff;
         }
 
-        @keyframes ai-spin {
-            from {
-                transform: rotate(0deg);
-            }
+        .diagnostic-result-link {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border: 1px solid #2c3550;
+            background: #1b2745;
+            color: #d9e4ff;
+            border-radius: 10px;
+        }
 
-            to {
-                transform: rotate(360deg);
-            }
+        @keyframes ai-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         @keyframes ai-pulse {
@@ -386,6 +408,16 @@
             {{ request.args.get("error") }}
         </div>
     {% endif %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
     <div class="top-links">
         <a href="/admin/leads/{{ lead.id }}/intake-input">
@@ -464,80 +496,21 @@
             <h2>Client Constraints</h2>
 
             <div class="constraints-grid">
-                <div>
-                    <strong>Персональные данные:</strong>
-                    <p>{{ constraints.has_personal_data or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Типы ПДн:</strong>
-                    <p>{{ constraints.personal_data_types or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Можно обезличить:</strong>
-                    <p>{{ constraints.can_anonymize or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Облако допустимо:</strong>
-                    <p>{{ constraints.cloud_allowed or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Локализация:</strong>
-                    <p>{{ constraints.localization_requirements or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Политики ИБ:</strong>
-                    <p>{{ constraints.security_policies or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>NDA:</strong>
-                    <p>{{ constraints.nda_required or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>ROI-метрики:</strong>
-                    <p>{{ constraints.roi_metrics_available or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Какие метрики есть:</strong>
-                    <p>{{ constraints.roi_metrics_details or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Бюджет:</strong>
-                    <p>{{ constraints.budget_known or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Готовность к MVP:</strong>
-                    <p>{{ constraints.mvp_readiness or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Ограничения scope:</strong>
-                    <p>{{ constraints.scope_limitations or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Риск ограничений:</strong>
-                    <p>{{ constraints.constraint_risk or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Следующее действие:</strong>
-                    <p>{{ constraints.next_action or "не указано" }}</p>
-                </div>
-
-                <div>
-                    <strong>Комментарий:</strong>
-                    <p>{{ constraints.comment or "не указано" }}</p>
-                </div>
+                <div><strong>Персональные данные:</strong><p>{{ constraints.has_personal_data or "не указано" }}</p></div>
+                <div><strong>Типы ПДн:</strong><p>{{ constraints.personal_data_types or "не указано" }}</p></div>
+                <div><strong>Можно обезличить:</strong><p>{{ constraints.can_anonymize or "не указано" }}</p></div>
+                <div><strong>Облако допустимо:</strong><p>{{ constraints.cloud_allowed or "не указано" }}</p></div>
+                <div><strong>Локализация:</strong><p>{{ constraints.localization_requirements or "не указано" }}</p></div>
+                <div><strong>Политики ИБ:</strong><p>{{ constraints.security_policies or "не указано" }}</p></div>
+                <div><strong>NDA:</strong><p>{{ constraints.nda_required or "не указано" }}</p></div>
+                <div><strong>ROI-метрики:</strong><p>{{ constraints.roi_metrics_available or "не указано" }}</p></div>
+                <div><strong>Какие метрики есть:</strong><p>{{ constraints.roi_metrics_details or "не указано" }}</p></div>
+                <div><strong>Бюджет:</strong><p>{{ constraints.budget_known or "не указано" }}</p></div>
+                <div><strong>Готовность к MVP:</strong><p>{{ constraints.mvp_readiness or "не указано" }}</p></div>
+                <div><strong>Ограничения scope:</strong><p>{{ constraints.scope_limitations or "не указано" }}</p></div>
+                <div><strong>Риск ограничений:</strong><p>{{ constraints.constraint_risk or "не указано" }}</p></div>
+                <div><strong>Следующее действие:</strong><p>{{ constraints.next_action or "не указано" }}</p></div>
+                <div><strong>Комментарий:</strong><p>{{ constraints.comment or "не указано" }}</p></div>
             </div>
         </section>
     {% else %}
@@ -554,12 +527,7 @@
             <div class="form-grid">
                 <label>
                     Персональные данные
-                    <input
-                        type="text"
-                        name="has_personal_data"
-                        value="{{ constraints.has_personal_data if constraints else '' }}"
-                        placeholder="Да / Нет / Нужно уточнить"
-                    >
+                    <input type="text" name="has_personal_data" value="{{ constraints.has_personal_data if constraints else '' }}" placeholder="Да / Нет / Нужно уточнить">
                 </label>
 
                 <label>
@@ -569,22 +537,12 @@
 
                 <label>
                     Можно обезличить
-                    <input
-                        type="text"
-                        name="can_anonymize"
-                        value="{{ constraints.can_anonymize if constraints else '' }}"
-                        placeholder="Да / Нет / Частично"
-                    >
+                    <input type="text" name="can_anonymize" value="{{ constraints.can_anonymize if constraints else '' }}" placeholder="Да / Нет / Частично">
                 </label>
 
                 <label>
                     Облако допустимо
-                    <input
-                        type="text"
-                        name="cloud_allowed"
-                        value="{{ constraints.cloud_allowed if constraints else '' }}"
-                        placeholder="Да / Нет / Только обезличенные данные"
-                    >
+                    <input type="text" name="cloud_allowed" value="{{ constraints.cloud_allowed if constraints else '' }}" placeholder="Да / Нет / Только обезличенные данные">
                 </label>
 
                 <label>
@@ -599,22 +557,12 @@
 
                 <label>
                     NDA
-                    <input
-                        type="text"
-                        name="nda_required"
-                        value="{{ constraints.nda_required if constraints else '' }}"
-                        placeholder="Нужно / Не нужно / Нужно уточнить"
-                    >
+                    <input type="text" name="nda_required" value="{{ constraints.nda_required if constraints else '' }}" placeholder="Нужно / Не нужно / Нужно уточнить">
                 </label>
 
                 <label>
                     Метрики для ROI
-                    <input
-                        type="text"
-                        name="roi_metrics_available"
-                        value="{{ constraints.roi_metrics_available if constraints else '' }}"
-                        placeholder="Да, есть точные данные / Частично / Нет"
-                    >
+                    <input type="text" name="roi_metrics_available" value="{{ constraints.roi_metrics_available if constraints else '' }}" placeholder="Да, есть точные данные / Частично / Нет">
                 </label>
 
                 <label class="wide">
@@ -624,58 +572,32 @@
 
                 <label>
                     Стоимость одной потерянной заявки
-                    <input
-                        type="text"
-                        name="lost_request_value"
-                        placeholder="Например: 8 000 ₽"
-                    >
+                    <input type="text" name="lost_request_value" placeholder="Например: 8 000 ₽">
                 </label>
 
                 <label>
                     Доля сложных заявок
-                    <input
-                        type="text"
-                        name="complex_request_share"
-                        placeholder="Например: 15%"
-                    >
+                    <input type="text" name="complex_request_share" placeholder="Например: 15%">
                 </label>
 
                 <label>
                     SLA / правила обработки
-                    <textarea
-                        name="sla_rules"
-                        rows="3"
-                        placeholder="Например: первичная обработка в течение 2 часов"
-                    ></textarea>
+                    <textarea name="sla_rules" rows="3" placeholder="Например: первичная обработка в течение 2 часов"></textarea>
                 </label>
 
                 <label>
                     Интеграции / текущие системы
-                    <textarea
-                        name="integrations"
-                        rows="3"
-                        placeholder="Например: Excel, Telegram, 1C, выгрузка CSV возможна"
-                    ></textarea>
+                    <textarea name="integrations" rows="3" placeholder="Например: Excel, Telegram, 1C, выгрузка CSV возможна"></textarea>
                 </label>
 
                 <label>
                     Бюджет
-                    <input
-                        type="text"
-                        name="budget_known"
-                        value="{{ constraints.budget_known if constraints else '' }}"
-                        placeholder="Известен / обсуждается / не указан"
-                    >
+                    <input type="text" name="budget_known" value="{{ constraints.budget_known if constraints else '' }}" placeholder="Известен / обсуждается / не указан">
                 </label>
 
                 <label>
                     Готовность к MVP
-                    <input
-                        type="text"
-                        name="mvp_readiness"
-                        value="{{ constraints.mvp_readiness if constraints else '' }}"
-                        placeholder="Да / Нет / После подтверждения экономики"
-                    >
+                    <input type="text" name="mvp_readiness" value="{{ constraints.mvp_readiness if constraints else '' }}" placeholder="Да / Нет / После подтверждения экономики">
                 </label>
 
                 <label class="wide">
@@ -685,12 +607,7 @@
 
                 <label>
                     Риск ограничений
-                    <input
-                        type="text"
-                        name="constraint_risk"
-                        value="{{ constraints.constraint_risk if constraints else '' }}"
-                        placeholder="Низкий / Средний / Высокий"
-                    >
+                    <input type="text" name="constraint_risk" value="{{ constraints.constraint_risk if constraints else '' }}" placeholder="Низкий / Средний / Высокий">
                 </label>
 
                 <label class="wide">
@@ -710,6 +627,138 @@
             </div>
         </form>
     </section>
+
+    {% if diagnostic_runs %}
+        <section class="tasks-block">
+            <h2>Экспресс-диагностика</h2>
+
+            <div class="tasks-list">
+                {% for diagnostic in diagnostic_runs %}
+                    <div class="task-card">
+                        <div class="task-head">
+                            <strong>Diagnostic #{{ diagnostic.id }}</strong>
+                            <span class="task-status">{{ diagnostic.status or "не указано" }}</span>
+                        </div>
+
+                        <p>
+                            <strong>Ссылка для клиента:</strong><br>
+                            <a href="{{ diagnostic.input_pack_url }}" target="_blank">
+                                {{ diagnostic.input_pack_url }}
+                            </a>
+                        </p>
+
+                        <p>
+                            <strong>Создано:</strong>
+                            {{ diagnostic.created_at or "не указано" }}
+                        </p>
+
+                        <p>
+                            <strong>Обновлено:</strong>
+                            {{ diagnostic.updated_at or "не указано" }}
+                        </p>
+
+                        {% if diagnostic.d002_result %}
+                            <p>
+                                <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d002">
+                                    Открыть результат D-002 MVP Design
+                                </a>
+                            </p>
+                        {% endif %}
+
+                        {% if diagnostic.status == "CLIENT_INPUT_RECEIVED" and not diagnostic.d001_result%}
+                            <form
+                                method="post"
+                                action="/admin/diagnostic/{{ diagnostic.id }}/run-d001"
+                                class="task-ai-form"
+                            >
+                                <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+                                <button
+                                    type="submit"
+                                    class="ai-run-button"
+                                >
+                                    <span class="ai-run-icon">⚡</span>
+                                    <span class="ai-run-text">
+                                    Запустить D-001 Diagnostic Assessment
+                                    </span>
+                                </button>
+                            </form>
+
+                            <div class="ai-run-hint">
+                                AI Agent выполнит предварительную диагностику,
+                                определит класс проекта, риски, ограничения и
+                                потенциальные направления автоматизации.
+                            </div>
+                            {% if diagnostic.d001_result %}
+<p>
+    <a
+        href="/admin/diagnostic/{{ diagnostic.id }}/d001"
+        target="_blank"
+    >
+        Открыть результат D-001
+    </a>
+</p>
+{% endif %}
+                            <form
+                                method="post"
+                                action="/admin/diagnostic/{{ diagnostic.id }}/run-d002"
+                                class="task-ai-form js-ai-run-form"
+                            >
+                                <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+                                <button type="submit" class="ai-run-button">
+                                    <span class="ai-run-icon">⚡</span>
+                                    <span class="ai-run-text">
+                                        Запустить D-002 MVP Design
+                                    </span>
+                                </button>
+                            </form>
+
+                            <div class="ai-run-hint">
+                                AI Agent построит MVP Design, архитектуру решения,
+                                оценку реализации и рекомендации по внедрению.
+                            </div>
+                        {% endif %}
+
+                        {% if diagnostic.d002_result %}
+                            <form
+                                method="post"
+                                action="/admin/diagnostic/{{ diagnostic.id }}/run-d002"
+                                class="task-ai-form js-ai-run-form"
+                            >
+                                <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                                <input type="hidden" name="force_rebuild" value="1">
+
+                                <button type="submit" class="ai-run-button">
+                                    <span class="ai-run-icon">⟳</span>
+                                    <span class="ai-run-text">
+                                        Пересчитать D-002
+                                    </span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <section class="tasks-block">
+            <h2>Экспресс-диагностика</h2>
+
+            <form method="post" action="/admin/leads/{{ lead.id }}/create-diagnostic">
+                <button type="submit" class="ai-run-button">
+                    <span class="ai-run-icon">⚡</span>
+                    <span class="ai-run-text">
+                        Создать экспресс-диагностику
+                    </span>
+                </button>
+            </form>
+
+            <div class="ai-run-hint">
+                Будет создан Diagnostic Input Pack и ссылка для клиента.
+            </div>
+        </section>
+    {% endif %}
 
     {% if tasks %}
         <section class="tasks-block">
@@ -735,82 +784,54 @@
                         </p>
 
                         {% if task.stage in ai_run_allowed_stages %}
-    <form method="post"
-          action="/admin/tasks/{{ task.id }}/run-ai"
-          class="task-ai-form js-ai-run-form">
+                            <form
+                                method="post"
+                                action="/admin/tasks/{{ task.id }}/run-ai"
+                                class="task-ai-form js-ai-run-form"
+                            >
+                                <input type="hidden" name="lead_id" value="{{ lead.id }}">
 
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                                <button type="submit" class="ai-run-button">
+                                    <span class="ai-run-icon">⚡</span>
+                                    <span class="ai-run-text">
+                                        {% if task.status == "Done" %}
+                                            Пересчитать через AI Agent
+                                        {% else %}
+                                            Запустить AI Agent
+                                        {% endif %}
+                                    </span>
+                                </button>
+                            </form>
 
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⚡</span>
-            <span class="ai-run-text">
-                {% if task.status == "Done" %}
-                    Пересчитать через AI Agent
-                {% else %}
-                    Запустить AI Agent
-                {% endif %}
-            </span>
-        </button>
-    </form>
+                            <div class="ai-run-hint">
+                                {% if task.status == "Done" %}
+                                    AI Agent пересчитает результат с учётом новых данных и обновит Result / Next action.
+                                    Не закрывайте страницу до возврата в карточку лида.
+                                {% else %}
+                                    AI Agent автоматически заполнит Result и Next action.
+                                    Не закрывайте страницу до возврата в карточку лида.
+                                {% endif %}
+                            </div>
+                        {% elif task.stage == "Client Delivery" %}
+                            <p class="task-note">
+                                Client Delivery выполняется вручную: отправьте итоговый отчёт / КП клиенту
+                                и зафиксируйте дату, канал, реакцию и следующий шаг.
+                            </p>
+                        {% endif %}
 
-    <div class="ai-run-hint">
-        {% if task.status == "Done" %}
-            AI Agent пересчитает результат с учётом новых данных и обновит Result / Next action.
-            Не закрывайте страницу до возврата в карточку лида.
-        {% else %}
-            AI Agent автоматически заполнит Result и Next action.
-            Не закрывайте страницу до возврата в карточку лида.
-        {% endif %}
-    </div>
-{% elif task.stage == "Client Delivery" %}
-    <p class="task-note">
-        Client Delivery выполняется вручную: отправьте итоговый отчёт / КП клиенту
-        и зафиксируйте дату, канал, реакцию и следующий шаг.
-    </p>
-{% endif %}
-
-                        <p>
-                            <strong>Stage:</strong>
-                            {{ task.stage or "не указано" }}
-                        </p>
-
-                        <p>
-                            <strong>Task:</strong><br>
-                            {{ task.task_title or "не указано" }}
-                        </p>
-
-                        <p>
-                            <strong>Input source:</strong><br>
-                            {{ task.input_source or "не указано" }}
-                        </p>
-
-                        <p>
-                            <strong>Expected output:</strong><br>
-                            {{ task.expected_output or "не указано" }}
-                        </p>
-
-                        <p>
-                            <strong>Priority:</strong>
-                            {{ task.priority or "не указано" }}
-                        </p>
-
-                        <p>
-                            <strong>Owner:</strong>
-                            {{ task.owner or "не указано" }}
-                        </p>
-
-                        <p>
-                            <strong>Human required:</strong>
-                            {{ task.human_required or "не указано" }}
-                        </p>
+                        <p><strong>Stage:</strong> {{ task.stage or "не указано" }}</p>
+                        <p><strong>Task:</strong><br>{{ task.task_title or "не указано" }}</p>
+                        <p><strong>Input source:</strong><br>{{ task.input_source or "не указано" }}</p>
+                        <p><strong>Expected output:</strong><br>{{ task.expected_output or "не указано" }}</p>
+                        <p><strong>Priority:</strong> {{ task.priority or "не указано" }}</p>
+                        <p><strong>Owner:</strong> {{ task.owner or "не указано" }}</p>
+                        <p><strong>Human required:</strong> {{ task.human_required or "не указано" }}</p>
 
                         <form method="post" action="/admin/tasks/{{ task.id }}/update" class="task-form">
                             <input type="hidden" name="lead_id" value="{{ lead.id }}">
                             <input type="hidden" name="stage" value="{{ task.stage }}">
 
-                            <p>
-                                <strong>Task status</strong>
-                            </p>
+                            <p><strong>Task status</strong></p>
 
                             <select name="status">
                                 {% for status in ["New", "In Progress", "Waiting for Client Info", "Ready for Intake Agent", "Waiting for Data", "Waiting for Human Review", "Done", "Blocked", "Cancelled"] %}
@@ -820,19 +841,13 @@
                                 {% endfor %}
                             </select>
 
-                            <p>
-                                <strong>Result</strong>
-                            </p>
+                            <p><strong>Result</strong></p>
                             <textarea name="result">{{ task.result or "" }}</textarea>
 
-                            <p>
-                                <strong>Next action</strong>
-                            </p>
+                            <p><strong>Next action</strong></p>
                             <textarea name="next_action">{{ task.next_action or "" }}</textarea>
 
-                            <p>
-                                <strong>Comment</strong>
-                            </p>
+                            <p><strong>Comment</strong></p>
                             <textarea name="comment">{{ task.comment or "" }}</textarea>
 
                             {% if task.stage in ai_run_allowed_stages %}
