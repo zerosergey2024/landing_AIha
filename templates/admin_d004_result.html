@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>D-004 Commercial Proposal — AIha</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #0b1020;
+            color: #ffffff;
+        }
+
+        a {
+            color: #8fd8ff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #121a30;
+            border: 1px solid #334;
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 14px;
+        }
+
+        .meta {
+            color: #9fb3d9;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #0f172b;
+            border: 1px solid #2c3550;
+            padding: 18px;
+            border-radius: 12px;
+            color: #d9e4ff;
+            line-height: 1.55;
+        }
+    </style>
+</head>
+
+<body>
+<div class="page">
+    <p>
+        <a href="/admin/leads/{{ diagnostic.lead_id }}">
+            ← Назад к карточке лида
+        </a>
+    </p>
+
+    <h1>D-004 Commercial Proposal</h1>
+
+    <div class="meta">
+        Diagnostic #{{ diagnostic.id }} |
+        Status: {{ diagnostic.status }} |
+        Completed: {{ diagnostic.d004_completed_at or "не выполнено" }}
+    </div>
+
+    <section class="card">
+        <h2>D-004 Summary</h2>
+        <pre>{{ diagnostic.d004_summary or "Summary пока не сформирован." }}</pre>
+    </section>
+
+    <section class="card">
+        <h2>D-004 Full Result</h2>
+        <pre>{{ diagnostic.d004_result or "D-004 пока не выполнен." }}</pre>
+    </section>
+</div>
+</body>
+</html>

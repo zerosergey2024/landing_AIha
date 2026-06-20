@@ -165,6 +165,13 @@ def init_db() -> None:
                 "d002_result": "TEXT",
                 "d002_summary": "TEXT",
                 "d002_completed_at": "TEXT",
+                "d003_result": "TEXT",
+                "d003_summary": "TEXT",
+                "d003_completed_at": "TEXT",
+                "d004_result": "TEXT",
+                "d004_summary": "TEXT",
+
+                "d004_completed_at": "TEXT",
             },
         )
 

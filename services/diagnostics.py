@@ -13,6 +13,7 @@ DIAGNOSTIC_STATUS_CREATED = "DIAGNOSTIC_CREATED"
 DIAGNOSTIC_STATUS_FORM_SENT = "CLIENT_INPUT_FORM_SENT"
 DIAGNOSTIC_STATUS_INPUT_RECEIVED = "CLIENT_INPUT_RECEIVED"
 DIAGNOSTIC_STATUS_INPUT_NORMALIZED = "DIAGNOSTIC_INPUT_NORMALIZED"
+DIAGNOSTIC_STATUS_COMPLETED = "COMPLETED"
 
 DIAGNOSTIC_STATUS_D001_RUNNING = "D001_RUNNING"
 DIAGNOSTIC_STATUS_D001_COMPLETED = "D001_COMPLETED"
@@ -20,6 +21,8 @@ DIAGNOSTIC_STATUS_D002_RUNNING = "D002_RUNNING"
 DIAGNOSTIC_STATUS_D002_COMPLETED = "D002_COMPLETED"
 DIAGNOSTIC_STATUS_D003_RUNNING = "D003_RUNNING"
 DIAGNOSTIC_STATUS_D003_COMPLETED = "D003_COMPLETED"
+DIAGNOSTIC_STATUS_D004_RUNNING = "D004_RUNNING"
+DIAGNOSTIC_STATUS_D004_COMPLETED = "D004_COMPLETED"
 
 
 def _now_iso() -> str:
@@ -393,6 +396,83 @@ def save_d002_result(
                 summary,
                 now,
                 DIAGNOSTIC_STATUS_D002_COMPLETED,
+                now,
+                diagnostic_run_id,
+            ),
+        )
+        conn.commit()
+
+def save_d003_result(
+    diagnostic_run_id: int,
+    result: str,
+    summary: str | None = None,
+) -> None:
+    now = _now_iso()
+
+    with get_db_connection() as conn:
+        conn.execute(
+            """
+            UPDATE diagnostic_runs
+            SET d003_result = ?,
+                d003_summary = ?,
+                d003_completed_at = ?,
+                status = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                result,
+                summary,
+                now,
+                DIAGNOSTIC_STATUS_D003_COMPLETED,
+                now,
+                diagnostic_run_id,
+            ),
+        )
+        conn.commit()
+
+def complete_diagnostic_run(diagnostic_run_id: int) -> None:
+    now = _now_iso()
+
+    with get_db_connection() as conn:
+        conn.execute(
+            """
+            UPDATE diagnostic_runs
+            SET status = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                DIAGNOSTIC_STATUS_COMPLETED,
+                now,
+                diagnostic_run_id,
+            ),
+        )
+        conn.commit()
+
+def save_d004_result(
+    diagnostic_run_id: int,
+    result: str,
+    summary: str | None = None,
+) -> None:
+    now = _now_iso()
+
+    with get_db_connection() as conn:
+        conn.execute(
+            """
+            UPDATE diagnostic_runs
+            SET d004_result = ?,
+                d004_summary = ?,
+                d004_completed_at = ?,
+                status = ?,
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                result,
+                summary,
+                now,
+                DIAGNOSTIC_STATUS_D004_COMPLETED,
                 now,
                 diagnostic_run_id,
             ),

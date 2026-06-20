@@ -18,6 +18,8 @@ from services.intake_blocks import (
     get_task_for_lead,
 )
 from services.mvp_design import run_d002_mvp_design
+from services.diagnostic_report import run_d003_diagnostic_report
+from services.commercial_proposal import run_d004_commercial_proposal
 from services.diagnostic_assessment import run_d001_diagnostic_assessment
 from services.tasks import (
     create_next_task_after_update,
@@ -150,24 +152,19 @@ TASK_SELECT_SQL = """
     FROM agent_tasks
 """
 
-
 def admin_required() -> bool:
     return session.get("admin_logged_in") is True
-
 
 def redirect_with_error(path: str, error: str):
     query = urlencode({"error": error})
     return redirect(f"{path}?{query}")
 
-
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
 
 def normalize_form_value(value: str | None, default: str = "не указано") -> str:
     text = (value or "").strip()
     return text if text else default
-
 
 def is_empty_value(value: str) -> bool:
     return value.strip() in {
@@ -179,7 +176,6 @@ def is_empty_value(value: str) -> bool:
         "null",
         "NULL",
     }
-
 
 def get_task_meta(task_id: int) -> sqlite3.Row | None:
     """
@@ -258,7 +254,6 @@ def get_first_task_id_for_lead(lead_id: int) -> int | None:
         return None
 
     return int(row[0])
-
 
 def build_roi_details_with_extra_fields(
     *,
@@ -533,6 +528,134 @@ def admin_run_d002(diagnostic_run_id: int):
 
     return redirect("/admin/leads")
 
+@admin_bp.get("/diagnostic/<int:diagnostic_run_id>/d002")
+def admin_d002_result(diagnostic_run_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        diagnostic = conn.execute(
+            """
+            SELECT *
+            FROM diagnostic_runs
+            WHERE id = ?
+            """,
+            (diagnostic_run_id,),
+        ).fetchone()
+
+    if diagnostic is None:
+        return "Экспресс-диагностика не найдена", 404
+
+    return render_template(
+        "admin_d002_result.html",
+        diagnostic=diagnostic,
+    )
+
+@admin_bp.post("/diagnostic/<int:diagnostic_run_id>/run-d003")
+def admin_run_d003(diagnostic_run_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    lead_id = request.form.get("lead_id", "").strip()
+    force_rebuild = request.form.get("force_rebuild") == "1"
+
+    try:
+        run_d003_diagnostic_report(
+            diagnostic_run_id=diagnostic_run_id,
+            force_rebuild=force_rebuild,
+        )
+        flash("D-003 Diagnostic Report успешно выполнен.", "success")
+    except Exception as exc:
+        flash(f"Ошибка запуска D-003: {exc}", "error")
+
+    if lead_id:
+        return redirect(url_for("admin.admin_lead_detail", lead_id=int(lead_id)))
+
+    return redirect("/admin/leads")
+
+@admin_bp.get("/diagnostic/<int:diagnostic_run_id>/d003")
+def admin_d003_result(diagnostic_run_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        diagnostic = conn.execute(
+            """
+            SELECT *
+            FROM diagnostic_runs
+            WHERE id = ?
+            """,
+            (diagnostic_run_id,),
+        ).fetchone()
+
+    if diagnostic is None:
+        return "Экспресс-диагностика не найдена", 404
+
+    return render_template(
+        "admin_d003_result.html",
+        diagnostic=diagnostic,
+    )
+
+@admin_bp.post("/diagnostic/<int:diagnostic_run_id>/run-d004")
+def admin_run_d004(diagnostic_run_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    lead_id = request.form.get("lead_id", "").strip()
+
+    try:
+        force_rebuild = (
+            request.form.get("force_rebuild", "0") == "1"
+        )
+
+        run_d004_commercial_proposal(
+            diagnostic_run_id=diagnostic_run_id,
+            force_rebuild=force_rebuild,
+        )
+
+    except Exception as exc:
+        if lead_id:
+            return redirect_with_error(
+                f"/admin/leads/{lead_id}",
+                f"D-004 error: {exc}",
+            )
+
+        return str(exc), 500
+
+    if lead_id:
+        return redirect(f"/admin/leads/{lead_id}")
+
+    return redirect("/admin/leads")
+
+@admin_bp.get("/diagnostic/<int:diagnostic_run_id>/d004")
+def admin_d004_result(diagnostic_run_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        diagnostic = conn.execute(
+            """
+            SELECT *
+            FROM diagnostic_runs
+            WHERE id = ?
+            """,
+            (diagnostic_run_id,),
+        ).fetchone()
+
+    if diagnostic is None:
+        return "Diagnostic run not found", 404
+
+    return render_template(
+        "admin_d004_result.html",
+        diagnostic=diagnostic,
+    )
+
 @admin_bp.post("/leads/<int:lead_id>/constraints/update")
 def admin_update_constraints(lead_id: int):
     if not admin_required():
@@ -703,31 +826,6 @@ def admin_final_outputs(lead_id: int):
         commercial_proposal_task=outputs["commercial_proposal_task"],
         final_report=outputs["final_report"],
         commercial_proposal=outputs["commercial_proposal"],
-    )
-
-@admin_bp.get("/diagnostic/<int:diagnostic_run_id>/d002")
-def admin_d002_result(diagnostic_run_id: int):
-    if not admin_required():
-        return redirect("/admin/login")
-
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-
-        diagnostic = conn.execute(
-            """
-            SELECT *
-            FROM diagnostic_runs
-            WHERE id = ?
-            """,
-            (diagnostic_run_id,),
-        ).fetchone()
-
-    if diagnostic is None:
-        return "Экспресс-диагностика не найдена", 404
-
-    return render_template(
-        "admin_d002_result.html",
-        diagnostic=diagnostic,
     )
 
 
