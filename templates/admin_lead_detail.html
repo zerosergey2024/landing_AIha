@@ -81,6 +81,7 @@
             display: flex;
             gap: 14px;
             flex-wrap: wrap;
+            align-items: center;
             margin: 18px 0 24px;
         }
 
@@ -90,6 +91,21 @@
             border: 1px solid #2c3550;
             background: #0f172b;
             border-radius: 10px;
+        }
+
+        .top-links form {
+            margin: 0;
+        }
+
+        .top-link-button {
+            display: inline-block;
+            padding: 10px 14px;
+            border: 1px solid #2c3550;
+            background: #0f172b;
+            color: #8fd8ff;
+            border-radius: 10px;
+            font-weight: bold;
+            margin: 0;
         }
 
         .grid,
@@ -427,6 +443,20 @@
         <a href="/admin/leads/{{ lead.id }}/final">
             Открыть итоговый отчёт / КП
         </a>
+
+        {% if has_completed_t004 %}
+            {% if diagnostic_runs %}
+                <a href="#express-diagnostic">
+                    Перейти к экспресс-диагностике →
+                </a>
+            {% else %}
+                <form method="post" action="/admin/leads/{{ lead.id }}/create-diagnostic">
+                    <button type="submit" class="top-link-button">
+                        Перейти к экспресс-диагностике →
+                    </button>
+                </form>
+            {% endif %}
+        {% endif %}
     </div>
 
     <div class="card">
@@ -629,202 +659,211 @@
     </section>
 
     {% if diagnostic_runs %}
-        <section class="tasks-block">
-            <h2>Экспресс-диагностика</h2>
+    <section class="tasks-block" id="express-diagnostic">
+        <h2>Экспресс-диагностика</h2>
 
-            <div class="tasks-list">
-                {% for diagnostic in diagnostic_runs %}
-                    <div class="task-card">
-                        <div class="task-head">
-                            <strong>Diagnostic #{{ diagnostic.id }}</strong>
-                            <span class="task-status">{{ diagnostic.status or "не указано" }}</span>
-                        </div>
+        <div class="tasks-list">
+            {% for diagnostic in diagnostic_runs %}
+                <div class="task-card">
+                    <div class="task-head">
+                        <strong>Diagnostic #{{ diagnostic.id }}</strong>
+                        <span class="task-status">{{ diagnostic.status or "не указано" }}</span>
+                    </div>
 
+                    <p>
+                        <strong>Ссылка для клиента:</strong><br>
+                        <a href="{{ diagnostic.input_pack_url }}" target="_blank">
+                            {{ diagnostic.input_pack_url }}
+                        </a>
+                    </p>
+
+                    <p><strong>Создано:</strong> {{ diagnostic.created_at or "не указано" }}</p>
+                    <p><strong>Обновлено:</strong> {{ diagnostic.updated_at or "не указано" }}</p>
+
+                    {% if diagnostic.d004_result %}
                         <p>
-                            <strong>Ссылка для клиента:</strong><br>
-                            <a href="{{ diagnostic.input_pack_url }}" target="_blank">
-                                {{ diagnostic.input_pack_url }}
+                            <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/final">
+                                Открыть итог экспресс-диагностики
                             </a>
                         </p>
+                    {% endif %}
 
-                        <p><strong>Создано:</strong> {{ diagnostic.created_at or "не указано" }}</p>
-                        <p><strong>Обновлено:</strong> {{ diagnostic.updated_at or "не указано" }}</p>
-                        {% if diagnostic.d001_result %}
-    <p>
-        <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d001">
-            Открыть результат D-001 Diagnostic Assessment
-        </a>
-    </p>
+                    {% if diagnostic.d001_result %}
+                        <p>
+                            <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d001">
+                                Открыть результат D-001 Diagnostic Assessment
+                            </a>
+                        </p>
+                    {% endif %}
+
+                    {% if diagnostic.d002_result %}
+                        <p>
+                            <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d002">
+                                Открыть результат D-002 MVP Design
+                            </a>
+                        </p>
+                    {% endif %}
+
+                    {% if diagnostic.d003_result %}
+                        <p>
+                            <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d003">
+                                Открыть результат D-003 Diagnostic Report
+                            </a>
+                        </p>
+                    {% endif %}
+
+                    {% if diagnostic.d004_result %}
+                        <p>
+                            <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d004">
+                                Открыть результат D-004 Commercial Proposal
+                            </a>
+                        </p>
+                    {% endif %}
+
+                    {% if diagnostic.status == "CLIENT_INPUT_RECEIVED" and not diagnostic.d001_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d001"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⚡</span>
+                                <span class="ai-run-text">Запустить D-001 Diagnostic Assessment</span>
+                            </button>
+                        </form>
+
+                        <div class="ai-run-hint">
+                            AI Agent выполнит диагностическую оценку процесса, данных, интеграций, рисков и экономики.
+                        </div>
+                    {% endif %}
+
+                    {% if diagnostic.d001_result and not diagnostic.d002_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d002"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⚡</span>
+                                <span class="ai-run-text">Запустить D-002 MVP Design</span>
+                            </button>
+                        </form>
+
+                        <div class="ai-run-hint">
+                            AI Agent построит MVP Design, архитектуру решения и рекомендации по внедрению.
+                        </div>
+                    {% endif %}
+
+                    {% if diagnostic.d002_result and not diagnostic.d003_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d003"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⚡</span>
+                                <span class="ai-run-text">Запустить D-003 Diagnostic Report</span>
+                            </button>
+                        </form>
+
+                        <div class="ai-run-hint">
+                            AI Agent сформирует итоговый управленческий отчёт, roadmap и GO / GO_WITH_CONSTRAINTS / NO_GO.
+                        </div>
+                    {% endif %}
+
+                    {% if diagnostic.d003_result and not diagnostic.d004_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d004"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⚡</span>
+                                <span class="ai-run-text">Запустить D-004 Commercial Proposal</span>
+                            </button>
+                        </form>
+
+                        <div class="ai-run-hint">
+                            AI Agent сформирует коммерческое предложение на следующий этап:
+                            состав работ, сроки, бюджетный диапазон и следующий шаг для клиента.
+                        </div>
+                    {% endif %}
+
+                    {% if diagnostic.d001_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d001"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                            <input type="hidden" name="force_rebuild" value="1">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⟳</span>
+                                <span class="ai-run-text">Пересчитать D-001</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if diagnostic.d002_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d002"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                            <input type="hidden" name="force_rebuild" value="1">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⟳</span>
+                                <span class="ai-run-text">Пересчитать D-002</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if diagnostic.d003_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d003"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                            <input type="hidden" name="force_rebuild" value="1">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⟳</span>
+                                <span class="ai-run-text">Пересчитать D-003</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if diagnostic.d004_result %}
+                        <form method="post"
+                              action="/admin/diagnostic/{{ diagnostic.id }}/run-d004"
+                              class="task-ai-form js-ai-run-form">
+                            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                            <input type="hidden" name="force_rebuild" value="1">
+
+                            <button type="submit" class="ai-run-button">
+                                <span class="ai-run-icon">⟳</span>
+                                <span class="ai-run-text">Пересчитать D-004</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+{% else %}
+    <section class="tasks-block">
+        <h2>Экспресс-диагностика</h2>
+
+        <form method="post" action="/admin/leads/{{ lead.id }}/create-diagnostic">
+            <button type="submit" class="ai-run-button">
+                <span class="ai-run-icon">⚡</span>
+                <span class="ai-run-text">Создать экспресс-диагностику</span>
+            </button>
+        </form>
+
+        <div class="ai-run-hint">
+            Будет создан Diagnostic Input Pack и персональная ссылка для клиента.
+        </div>
+    </section>
 {% endif %}
-
-{% if diagnostic.d002_result %}
-    <p>
-        <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d002">
-            Открыть результат D-002 MVP Design
-        </a>
-    </p>
-{% endif %}
-
-{% if diagnostic.d003_result %}
-    <p>
-        <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d003">
-            Открыть результат D-003 Diagnostic Report
-        </a>
-    </p>
-{% endif %}
-
-{% if diagnostic.d004_result %}
-    <p>
-        <a class="diagnostic-result-link" href="/admin/diagnostic/{{ diagnostic.id }}/d004">
-            Открыть результат D-004 Commercial Proposal
-        </a>
-    </p>
-{% endif %}
-
-{% if diagnostic.status == "CLIENT_INPUT_RECEIVED" and not diagnostic.d001_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d001"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⚡</span>
-            <span class="ai-run-text">Запустить D-001 Diagnostic Assessment</span>
-        </button>
-    </form>
-
-    <div class="ai-run-hint">
-        AI Agent выполнит диагностическую оценку процесса, данных, интеграций, рисков и экономики.
-    </div>
-{% endif %}
-
-{% if diagnostic.d001_result and not diagnostic.d002_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d002"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⚡</span>
-            <span class="ai-run-text">Запустить D-002 MVP Design</span>
-        </button>
-    </form>
-
-    <div class="ai-run-hint">
-        AI Agent построит MVP Design, архитектуру решения и рекомендации по внедрению.
-    </div>
-{% endif %}
-
-{% if diagnostic.d002_result and not diagnostic.d003_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d003"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⚡</span>
-            <span class="ai-run-text">Запустить D-003 Diagnostic Report</span>
-        </button>
-    </form>
-
-    <div class="ai-run-hint">
-        AI Agent сформирует итоговый управленческий отчёт, roadmap и GO / GO_WITH_CONSTRAINTS / NO_GO.
-    </div>
-{% endif %}
-
-{% if diagnostic.d003_result and not diagnostic.d004_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d004"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⚡</span>
-            <span class="ai-run-text">Запустить D-004 Commercial Proposal</span>
-        </button>
-    </form>
-
-    <div class="ai-run-hint">
-        AI Agent сформирует коммерческое предложение на следующий этап:
-        состав работ, сроки, бюджетный диапазон и следующий шаг для клиента.
-    </div>
-{% endif %}
-
-{% if diagnostic.d001_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d001"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-        <input type="hidden" name="force_rebuild" value="1">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⟳</span>
-            <span class="ai-run-text">Пересчитать D-001</span>
-        </button>
-    </form>
-{% endif %}
-
-{% if diagnostic.d002_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d002"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-        <input type="hidden" name="force_rebuild" value="1">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⟳</span>
-            <span class="ai-run-text">Пересчитать D-002</span>
-        </button>
-    </form>
-{% endif %}
-
-{% if diagnostic.d003_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d003"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-        <input type="hidden" name="force_rebuild" value="1">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⟳</span>
-            <span class="ai-run-text">Пересчитать D-003</span>
-        </button>
-    </form>
-{% endif %}
-
-{% if diagnostic.d004_result %}
-    <form method="post"
-          action="/admin/diagnostic/{{ diagnostic.id }}/run-d004"
-          class="task-ai-form js-ai-run-form">
-        <input type="hidden" name="lead_id" value="{{ lead.id }}">
-        <input type="hidden" name="force_rebuild" value="1">
-
-        <button type="submit" class="ai-run-button">
-            <span class="ai-run-icon">⟳</span>
-            <span class="ai-run-text">Пересчитать D-004</span>
-        </button>
-    </form>
-{% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
-    {% else %}
-        <section class="tasks-block">
-            <h2>Экспресс-диагностика</h2>
-
-            <form method="post" action="/admin/leads/{{ lead.id }}/create-diagnostic">
-                <button type="submit" class="ai-run-button">
-                    <span class="ai-run-icon">⚡</span>
-                    <span class="ai-run-text">Создать экспресс-диагностику</span>
-                </button>
-            </form>
-
-            <div class="ai-run-hint">
-                Будет создан Diagnostic Input Pack и ссылка для клиента.
-            </div>
-        </section>
-    {% endif %}
 
     {% if tasks %}
         <section class="tasks-block">

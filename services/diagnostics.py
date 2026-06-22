@@ -136,6 +136,10 @@ def get_diagnostic_run_by_token(token: str) -> dict[str, Any] | None:
 
 
 def get_latest_diagnostic_run_for_lead(lead_id: int) -> dict[str, Any] | None:
+    """
+    Возвращает последнюю экспресс-диагностику по lead_id.
+    Нужно, чтобы не создавать дубликаты при повторном нажатии кнопки.
+    """
     with get_db_connection() as conn:
         row = conn.execute(
             """
@@ -157,6 +161,10 @@ def get_latest_diagnostic_run_for_lead(lead_id: int) -> dict[str, Any] | None:
 
 
 def get_diagnostic_runs_for_lead(lead_id: int) -> list[dict[str, Any]]:
+    """
+    Возвращает все диагностики по лиду.
+    Используется для отображения в карточке лида.
+    """
     with get_db_connection() as conn:
         rows = conn.execute(
             """
@@ -168,7 +176,7 @@ def get_diagnostic_runs_for_lead(lead_id: int) -> list[dict[str, Any]]:
             (lead_id,),
         ).fetchall()
 
-    result: list[dict[str, Any]] = []
+    result = []
 
     for row in rows:
         item = dict(row)

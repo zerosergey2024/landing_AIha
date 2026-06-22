@@ -13,21 +13,17 @@ from telegram_notify import send_telegram_message
 
 public_bp = Blueprint("public", __name__)
 
-
 @public_bp.route("/")
 def index():
     return render_template("ecosystem.html")
-
 
 @public_bp.route("/studio")
 def studio_index():
     return render_template("index.html")
 
-
 @public_bp.route("/consulting")
 def consulting_index():
     return render_template("consulting/index.html")
-
 
 @public_bp.route("/consulting/audit", methods=["GET", "POST"])
 def consulting_audit():

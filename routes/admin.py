@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+from services.diagnostic_final_outputs import get_diagnostic_final_outputs
 
 from db import DB_PATH
 from export_leads_xlsx import export_leads_to_xlsx
@@ -31,7 +32,6 @@ from services.diagnostics import (
     get_diagnostic_runs_for_lead,
     get_latest_diagnostic_run_for_lead,
 )
-
 
 load_dotenv()
 
@@ -410,12 +410,18 @@ def admin_lead_detail(lead_id: int):
 
     diagnostic_runs = get_diagnostic_runs_for_lead(lead_id)
 
+    has_completed_t004 = any(
+        task["task_code"] == "T-004" and task["status"] == "Done"
+        for task in tasks
+    )
+
     return render_template(
         "admin_lead_detail.html",
         lead=lead,
         constraints=constraints,
         tasks=tasks,
         diagnostic_runs=diagnostic_runs,
+        has_completed_t004=has_completed_t004,
         statuses=LEAD_STATUSES,
         ai_run_allowed_stages=AI_RUN_ALLOWED_STAGES,
     )
@@ -654,6 +660,24 @@ def admin_d004_result(diagnostic_run_id: int):
     return render_template(
         "admin_d004_result.html",
         diagnostic=diagnostic,
+    )
+
+@admin_bp.get("/diagnostic/<int:diagnostic_run_id>/final")
+def admin_diagnostic_final_outputs(diagnostic_run_id: int):
+    if not admin_required():
+        return redirect("/admin/login")
+
+    outputs = get_diagnostic_final_outputs(diagnostic_run_id)
+
+    if outputs is None:
+        return "Экспресс-диагностика не найдена", 404
+
+    return render_template(
+        "admin_diagnostic_final_outputs.html",
+        diagnostic=outputs["diagnostic"],
+        lead=outputs["lead"],
+        full_output=outputs["full_output"],
+        client_output=outputs["client_output"],
     )
 
 @admin_bp.post("/leads/<int:lead_id>/constraints/update")

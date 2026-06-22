@@ -1,10 +1,855 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+  <meta charset="UTF-8">
+  <title>Diagnostic Input Pack — AIha Consulting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <style>
+    .diagnostic-page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    .diagnostic-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .diagnostic-logo {
+      max-height: 56px;
+    }
+
+    .diagnostic-nav {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 14px;
+    }
+
+    .diagnostic-hero {
+      padding: 32px;
+      border-radius: 24px;
+      background: #f5f7fb;
+      margin-bottom: 28px;
+    }
+
+    .diagnostic-hero h1 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+
+    .diagnostic-hero p {
+      margin: 0 0 10px;
+      color: #394150;
+      line-height: 1.55;
+    }
+
+    .diagnostic-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .form-section {
+      margin: 24px 0;
+      padding: 28px;
+      border: 1px solid #e5e7eb;
+      border-radius: 22px;
+      background: #ffffff;
+    }
+
+    .form-section h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+
+    .section-hint {
+      margin-top: 0;
+      margin-bottom: 22px;
+      color: #667085;
+      line-height: 1.5;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid #d0d5dd;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      background: #ffffff;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 18px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-weight: 400;
+    }
+
+    .checkbox-item input {
+      width: auto;
+      margin-top: 3px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 18px;
+      border-radius: 12px;
+      text-decoration: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .btn-primary {
+      background: #111827;
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: #111827;
+      border-color: #d0d5dd;
+    }
+
+    .submit-block {
+      margin-top: 32px;
+      padding: 28px;
+      border-radius: 22px;
+      background: #f5f7fb;
+    }
+
+    .small-note {
+      color: #667085;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 760px) {
+      .diagnostic-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .form-grid,
+      .checkbox-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .diagnostic-hero h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="diagnostic-page">
+
+    <header class="diagnostic-header">
+      <a href="{{ site_links.consulting_url }}">
+        <img
+          src="{{ url_for('static', filename='img/aiha-consulting-logo.png') }}"
+          alt="AIha Consulting"
+          class="diagnostic-logo"
+        >
+      </a>
+
+      <nav class="diagnostic-nav">
+        <a href="{{ site_links.ecosystem_url }}">AIha Ecosystem</a>
+        <a href="{{ site_links.studio_url }}">AIha Studio</a>
+        <a href="{{ site_links.consulting_url }}">AIha Consulting</a>
+      </nav>
+    </header>
+
+    <section class="diagnostic-hero">
+      <h1>Diagnostic Input Pack Form</h1>
+
+      <p>
+        Эта форма нужна для подготовки экспресс-диагностики AIha Consulting.
+        Она помогает собрать данные о процессе, системах, интеграциях, рисках,
+        ИБ/ПДн и экономике перед запуском диагностического контура.
+      </p>
+
+      <p>
+        Не обязательно заполнять всё идеально. После получения формы AIha Consulting
+        проведёт уточняющий созвон и вместе с вами доведёт Diagnostic Input Pack
+        до рабочего состояния.
+      </p>
+
+      <div class="diagnostic-actions">
+        <a
+          class="btn btn-secondary"
+          href="{{ url_for('diagnostic.download_input_pack_template', token=diagnostic_run.input_pack_token, file_format='docx') }}"
+        >
+          Скачать DOCX
+        </a>
+
+        <a
+          class="btn btn-secondary"
+          href="{{ url_for('diagnostic.download_input_pack_template', token=diagnostic_run.input_pack_token, file_format='pdf') }}"
+        >
+          Скачать PDF
+        </a>
+      </div>
+
+      <p class="small-note">
+        Вы можете скачать форму, собрать ответы внутри компании, а затем заполнить
+        онлайн-версию на этой странице.
+      </p>
+    </section>
+
+    <form method="post" enctype="multipart/form-data">
+
+      <section class="form-section">
+        <h2>1. Общая информация</h2>
+        <p class="section-hint">
+          Укажите компанию, контактных лиц и процесс, который будет диагностироваться.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="company">Компания</label>
+            <input
+              type="text"
+              id="company"
+              name="company"
+              value="{{ diagnostic_run.company or '' }}"
+              required
+            >
+          </div>
+
+          <div class="form-field">
+            <label for="contact_name">Контактное лицо</label>
+            <input
+              type="text"
+              id="contact_name"
+              name="contact_name"
+              value="{{ diagnostic_run.contact_name or '' }}"
+              required
+            >
+          </div>
+
+          <div class="form-field">
+            <label for="contact_email">Email контактного лица</label>
+            <input
+              type="email"
+              id="contact_email"
+              name="contact_email"
+              value="{{ diagnostic_run.contact_email or '' }}"
+            >
+          </div>
+
+          <div class="form-field">
+            <label for="process_owner">Владелец процесса</label>
+            <input type="text" id="process_owner" name="process_owner">
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>2. Цель диагностики</h2>
+        <p class="section-hint">
+          Отметьте цели, которые актуальны для экспресс-диагностики.
+        </p>
+
+        <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" name="goal_automation" value="Да">
+            Понять, можно ли автоматизировать процесс
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="goal_ai_feasibility" value="Да">
+            Оценить целесообразность AI-решения
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="goal_economics" value="Да">
+            Проверить экономический эффект
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="goal_bottlenecks" value="Да">
+            Найти узкие места процесса
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="goal_mvp_scope" value="Да">
+            Подготовить MVP scope
+          </label>
+        </div>
+
+        <div class="form-field full" style="margin-top: 18px;">
+          <label for="goal_other">Другое</label>
+          <textarea id="goal_other" name="goal_other"></textarea>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>3. Описание процесса</h2>
+        <p class="section-hint">
+          Опишите, как сейчас проходит заявка или задача от появления до закрытия.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="process_name">Название процесса</label>
+            <input type="text" id="process_name" name="process_name" required>
+          </div>
+
+          <div class="form-field">
+            <label for="request_start">Как появляется заявка?</label>
+            <input type="text" id="request_start" name="request_start">
+          </div>
+
+          <div class="form-field full">
+            <label for="process_description">Краткое описание процесса</label>
+            <textarea id="process_description" name="process_description" required></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="main_problem">Основная проблема процесса</label>
+            <textarea id="main_problem" name="main_problem"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label>Каналы поступления заявок</label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item">
+                <input type="checkbox" name="request_channels" value="Email">
+                Email
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="request_channels" value="Telegram">
+                Telegram
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="request_channels" value="CRM">
+                CRM
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="request_channels" value="1C">
+                1С
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="request_channels" value="Excel">
+                Excel
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" name="request_channels" value="Другое">
+                Другое
+              </label>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="registration_place">Где регистрируется заявка?</label>
+            <input type="text" id="registration_place" name="registration_place">
+          </div>
+
+          <div class="form-field">
+            <label for="sla_description">SLA / сроки обработки</label>
+            <input type="text" id="sla_description" name="sla_description">
+          </div>
+
+          <div class="form-field full">
+            <label for="roles_description">Роли в процессе</label>
+            <textarea id="roles_description" name="roles_description"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="statuses_description">Статусы заявки</label>
+            <textarea id="statuses_description" name="statuses_description"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="manual_operations">Ручные операции</label>
+            <textarea id="manual_operations" name="manual_operations"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="bottlenecks">Узкие места и потери</label>
+            <textarea id="bottlenecks" name="bottlenecks"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>4. Данные и Excel-журнал</h2>
+        <p class="section-hint">
+          Укажите, какие данные есть для анализа процесса.
+        </p>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="excel_log_available">Есть ли Excel-журнал заявок?</label>
+            <select id="excel_log_available" name="excel_log_available">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="data_period">Период данных</label>
+            <input type="text" id="data_period" name="data_period" placeholder="Например: 2 месяца">
+          </div>
+
+          <div class="form-field">
+            <label for="approx_rows">Примерное количество строк</label>
+            <input type="text" id="approx_rows" name="approx_rows">
+          </div>
+
+          <div class="form-field">
+            <label for="data_owner">Кто владелец данных?</label>
+            <input type="text" id="data_owner" name="data_owner">
+          </div>
+
+          <div class="form-field">
+            <label for="has_request_id">Есть ID заявки?</label>
+            <select id="has_request_id" name="has_request_id">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="has_timestamps">Есть временные метки?</label>
+            <select id="has_timestamps" name="has_timestamps">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="has_statuses">Есть статусы?</label>
+            <select id="has_statuses" name="has_statuses">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="has_responsible">Есть ответственный?</label>
+            <select id="has_responsible" name="has_responsible">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="has_category">Есть категория заявки?</label>
+            <select id="has_category" name="has_category">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="has_result">Есть результат обработки?</label>
+            <select id="has_result" name="has_result">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="has_free_text">Есть свободный текст?</label>
+            <select id="has_free_text" name="has_free_text">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <label for="data_quality_issues">Известные проблемы качества данных</label>
+            <textarea id="data_quality_issues" name="data_quality_issues"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>5. Используемые системы</h2>
+        <p class="section-hint">
+          Отметьте системы, которые участвуют в процессе.
+        </p>
+
+        <div class="checkbox-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="Excel">
+            Excel
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="1C">
+            1С
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="CRM">
+            CRM
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="Email">
+            Email
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="Telegram">
+            Telegram
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="Helpdesk">
+            Helpdesk / Service Desk
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="Internal system">
+            Внутренняя система
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" name="systems_used" value="Other">
+            Другое
+          </label>
+        </div>
+
+        <div class="form-field full" style="margin-top: 18px;">
+          <label for="systems_description">Описание систем</label>
+          <textarea id="systems_description" name="systems_description"></textarea>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>6. Интеграции и API</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="api_available">Есть ли API?</label>
+            <select id="api_available" name="api_available">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="exports_available">Есть ли выгрузки Excel/CSV?</label>
+            <select id="exports_available" name="exports_available">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="manual_exchange">Есть ли ручной обмен файлами?</label>
+            <select id="manual_exchange" name="manual_exchange">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="it_contact">Контакт ИТ</label>
+            <input type="text" id="it_contact" name="it_contact">
+          </div>
+
+          <div class="form-field full">
+            <label for="integration_description">Описание интеграций</label>
+            <textarea id="integration_description" name="integration_description"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>7. Информационная безопасность и ПДн</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="has_personal_data">Есть ли персональные данные?</label>
+            <select id="has_personal_data" name="has_personal_data">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="can_anonymize">Можно ли обезличить данные?</label>
+            <select id="can_anonymize" name="can_anonymize">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Частично">Частично</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="nda_required">Требуется ли NDA?</label>
+            <select id="nda_required" name="nda_required">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="nda_signed">NDA подписан?</label>
+            <select id="nda_signed" name="nda_signed">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="В процессе">В процессе</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="cloud_allowed">Разрешена облачная обработка?</label>
+            <select id="cloud_allowed" name="cloud_allowed">
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="Только обезличенные данные">Только обезличенные данные</option>
+              <option value="Не знаю">Не знаю</option>
+            </select>
+          </div>
+
+          <div class="form-field full">
+            <label for="personal_data_description">Какие ПДн могут встречаться?</label>
+            <textarea id="personal_data_description" name="personal_data_description"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="security_requirements">Требования ИБ</label>
+            <textarea id="security_requirements" name="security_requirements"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="personal_data_requirements">Требования по ПДн</label>
+            <textarea id="personal_data_requirements" name="personal_data_requirements"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>8. Экономика процесса</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="monthly_requests">Заявок в месяц</label>
+            <input type="text" id="monthly_requests" name="monthly_requests">
+          </div>
+
+          <div class="form-field">
+            <label for="weekly_requests">Заявок в неделю</label>
+            <input type="text" id="weekly_requests" name="weekly_requests">
+          </div>
+
+          <div class="form-field">
+            <label for="employees_involved">Сотрудников участвует</label>
+            <input type="text" id="employees_involved" name="employees_involved">
+          </div>
+
+          <div class="form-field">
+            <label for="avg_processing_time">Среднее время обработки заявки</label>
+            <input type="text" id="avg_processing_time" name="avg_processing_time">
+          </div>
+
+          <div class="form-field">
+            <label for="monthly_hours">Часов в месяц на процесс</label>
+            <input type="text" id="monthly_hours" name="monthly_hours">
+          </div>
+
+          <div class="form-field">
+            <label for="hour_cost">Стоимость часа сотрудника / команды</label>
+            <input type="text" id="hour_cost" name="hour_cost">
+          </div>
+
+          <div class="form-field full">
+            <label for="losses_from_errors">Потери от ошибок</label>
+            <textarea id="losses_from_errors" name="losses_from_errors"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="losses_from_delays">Потери от задержек / просрочек</label>
+            <textarea id="losses_from_delays" name="losses_from_delays"></textarea>
+          </div>
+
+          <div class="form-field full">
+            <label for="expected_effect">Какой эффект от автоматизации считается значимым?</label>
+            <textarea id="expected_effect" name="expected_effect"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>9. Материалы и файлы</h2>
+        <p class="section-hint">
+          Приложите доступные материалы: Excel-журнал заявок, регламент,
+          описание систем, интеграций/API, политики ИБ, NDA, метрики процесса.
+        </p>
+
+        <div class="form-field full">
+          <label for="attachments">Файлы</label>
+          <input
+            type="file"
+            id="attachments"
+            name="attachments"
+            multiple
+            accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+          >
+          <p class="small-note">
+            Допустимые форматы: xlsx, xls, csv, pdf, doc, docx, txt, png, jpg, jpeg.
+          </p>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>10. Контакты для уточнений</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="process_contact">Контакт по процессу</label>
+            <input type="text" id="process_contact" name="process_contact">
+          </div>
+
+          <div class="form-field">
+            <label for="data_contact">Контакт по данным</label>
+            <input type="text" id="data_contact" name="data_contact">
+          </div>
+
+          <div class="form-field">
+            <label for="security_contact">Контакт по ИБ / ПДн</label>
+            <input type="text" id="security_contact" name="security_contact">
+          </div>
+
+          <div class="form-field">
+            <label for="finance_contact">Финансовый / экономический контакт</label>
+            <input type="text" id="finance_contact" name="finance_contact">
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>11. Открытые вопросы</h2>
+
+        <div class="form-field full">
+          <label for="client_questions">Вопросы, комментарии, ограничения</label>
+          <textarea id="client_questions" name="client_questions"></textarea>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>12. Подтверждение</h2>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="data_usage_confirmed">Данные можно использовать для диагностики?</label>
+            <select id="data_usage_confirmed" name="data_usage_confirmed" required>
+              <option value="">Выберите</option>
+              <option value="Да">Да</option>
+              <option value="Нет">Нет</option>
+              <option value="С ограничениями">С ограничениями</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="responsible_person">Ответственный со стороны клиента</label>
+            <input type="text" id="responsible_person" name="responsible_person">
+          </div>
+
+          <div class="form-field full">
+            <label for="limitations">Ограничения на использование данных</label>
+            <textarea id="limitations" name="limitations"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="submit-block">
+        <p>
+          После отправки формы AIha Consulting проведёт предварительную проверку,
+          затем будет назначен уточняющий созвон для финализации Diagnostic Input Pack.
+        </p>
+
+        <button type="submit" class="btn btn-primary">
+          Отправить Diagnostic Input Pack
+        </button>
+      </div>
+
+    </form>
+  </main>
 </body>
 </html>
