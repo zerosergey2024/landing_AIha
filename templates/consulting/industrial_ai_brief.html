@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Industrial AI Brief — AIha Consulting</title>
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #11182c;
+      --card-soft: #151e35;
+      --text: #f4f7fb;
+      --muted: #aab4c6;
+      --line: rgba(255, 255, 255, 0.12);
+      --accent: #7c5cff;
+      --accent-2: #21c7a8;
+      --danger: #ff6b6b;
+      --input: #0e1528;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124, 92, 255, 0.24), transparent 32%),
+        radial-gradient(circle at top right, rgba(33, 199, 168, 0.18), transparent 32%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 72px;
+    }
+
+    .hero {
+      padding: 36px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(17, 24, 44, 0.92), rgba(21, 30, 53, 0.82));
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      margin-bottom: 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 18px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    h1 {
+      font-size: clamp(32px, 4vw, 52px);
+      line-height: 1.05;
+      margin: 0 0 16px;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta span {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 44px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--accent);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--line);
+    }
+
+    .btn.success {
+      background: var(--accent-2);
+      color: #06130f;
+    }
+
+    .notice {
+      margin: 0 0 24px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 1px solid rgba(33, 199, 168, 0.28);
+      background: rgba(33, 199, 168, 0.08);
+      color: #dffcf6;
+    }
+
+    form {
+      display: grid;
+      gap: 22px;
+    }
+
+    .section {
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(17, 24, 44, 0.86);
+    }
+
+    .section h2 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    .section-description {
+      color: var(--muted);
+      margin: 0 0 22px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      color: #e7ebf4;
+      font-weight: 650;
+      font-size: 14px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: -2px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--input);
+      color: var(--text);
+      padding: 12px 14px;
+      outline: none;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 118px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(124, 92, 255, 0.8);
+      box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.12);
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .check input {
+      margin-top: 3px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--line);
+      margin: 22px 0;
+    }
+
+    .subsection-title {
+      margin: 22px 0 12px;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .upload-box {
+      padding: 18px;
+      border: 1px dashed rgba(255, 255, 255, 0.28);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      color: var(--muted);
+    }
+
+    .submit-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(21, 30, 53, 0.92);
+    }
+
+    .submit-panel p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 720px;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    @media (max-width: 820px) {
+      .hero,
+      .section {
+        padding: 22px;
+      }
+
+      .grid,
+      .grid.three,
+      .checks {
+        grid-template-columns: 1fr;
+      }
+
+      .submit-panel {
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">AIha Consulting · Industrial AI Brief</div>
+
+      <h1>Industrial AI Brief</h1>
+
+      <p class="lead">
+        Специализированная форма для производственных AI-кейсов: прогнозирование поломок,
+        предиктивное обслуживание, оптимизация графиков, анализ простоев, контроль качества,
+        цепочки поставок, запасы, энергопотребление и другие промышленные процессы.
+      </p>
+
+      <div class="meta">
+        <span>Diagnostic ID: {% if diagnostic_run %}{{ diagnostic_run.id }}{% else %}—{% endif %}</span>
+        <span>Token: {{ token|default("—", true) }}</span>
+        <span>Версия brief: v1</span>
+      </div>
+
+      <div class="actions">
+        {% if download_docx_url %}
+          <a class="btn secondary" href="{{ download_docx_url }}">Скачать DOCX для заполнения</a>
+        {% endif %}
+
+        {% if download_pdf_url %}
+          <a class="btn secondary" href="{{ download_pdf_url }}">Скачать PDF для заполнения</a>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="notice">
+      Заполните только релевантные разделы. Если информации пока нет, пишите:
+      <strong>не указано</strong>, <strong>требует уточнения</strong> или <strong>частично известно</strong>.
+      Можно заполнить форму онлайн или скачать DOCX/PDF и приложить заполненный файл.
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="brief_type" value="industrial_ai" />
+      <input type="hidden" name="brief_version" value="v1" />
+
+      <section class="section">
+        <h2>1. Тип производственного AI-кейса</h2>
+        <p class="section-description">
+          Выберите основной кейс для первого MVP. Лучше начать с одного участка, одной линии,
+          одного типа оборудования или одной управленческой задачи.
+        </p>
+
+        <div class="field">
+          <label>Основной тип кейса <span class="required">*</span></label>
+          <div class="checks">
+            <label class="check"><input type="radio" name="primary_case_type" value="failure_prediction" required /> Прогнозирование поломок оборудования</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="predictive_maintenance" /> Предиктивное обслуживание</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="downtime_analysis" /> Анализ простоев</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="schedule_optimization" /> Оптимизация производственного графика</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="production_plan_fact" /> План-факт производства</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="quality_control" /> Контроль качества / анализ брака</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="supply_chain" /> Анализ цепочки поставок</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="inventory" /> Управление запасами</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="energy" /> Энергопотребление</label>
+            <label class="check"><input type="radio" name="primary_case_type" value="other" /> Другое</label>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="primary_case_type_other">Если выбрали “Другое”, уточните</label>
+            <input id="primary_case_type_other" name="primary_case_type_other" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="expected_effect">Ключевой ожидаемый эффект</label>
+            <input id="expected_effect" name="expected_effect" type="text" placeholder="Например: снижение простоев на 15%, снижение брака, рост OEE" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Главная бизнес-цель</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_downtime" /> Снизить простои</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_repairs" /> Снизить аварийные ремонты</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_defects" /> Сократить брак</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="increase_oee" /> Повысить OEE</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="improve_otd" /> Улучшить выполнение заказов в срок</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_inventory" /> Снизить запасы</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_stockouts" /> Сократить дефициты</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="improve_planning" /> Повысить точность планирования</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_energy_cost" /> Снизить энергозатраты</label>
+            <label class="check"><input type="checkbox" name="business_goals" value="reduce_manual_work" /> Снизить ручной труд</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2. Производственный контекст</h2>
+        <p class="section-description">
+          Опишите площадку, участок и текущий процесс, который должен быть проанализирован.
+        </p>
+
+        <div class="grid">
+          <div class="field">
+            <label for="company_name">Компания / подразделение</label>
+            <input id="company_name" name="company_name" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="production_site">Производственная площадка</label>
+            <input id="production_site" name="production_site" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="unit_or_line">Цех / участок / линия</label>
+            <input id="unit_or_line" name="unit_or_line" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="process_owner">Владелец процесса</label>
+            <input id="process_owner" name="process_owner" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="technical_contact">Технический контакт</label>
+            <input id="technical_contact" name="technical_contact" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="data_contact">Контакт по данным / ИТ</label>
+            <input id="data_contact" name="data_contact" type="text" />
+          </div>
+
+          <div class="field full">
+            <label for="current_process_description">Описание текущего процесса <span class="required">*</span></label>
+            <textarea id="current_process_description" name="current_process_description" required placeholder="Что происходит сейчас, кто участвует, где возникают проблемы, какие решения принимаются вручную"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="process_start">Где начинается процесс</label>
+            <input id="process_start" name="process_start" type="text" placeholder="Например: поступление заказа, запуск смены, поломка, поставка сырья" />
+          </div>
+
+          <div class="field">
+            <label for="process_end">Где заканчивается процесс</label>
+            <input id="process_end" name="process_end" type="text" placeholder="Например: выпуск продукции, закрытие ремонта, отгрузка" />
+          </div>
+
+          <div class="field full">
+            <label for="in_scope">Что входит в анализ</label>
+            <textarea id="in_scope" name="in_scope"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="out_of_scope">Что не входит в анализ</label>
+            <textarea id="out_of_scope" name="out_of_scope"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3. Объект анализа</h2>
+        <p class="section-description">
+          Заполните только то, что относится к выбранному кейсу: оборудование, линии, партии,
+          материалы, поставки или качество.
+        </p>
+
+        <h3 class="subsection-title">3.1 Оборудование</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label for="equipment_type">Тип оборудования</label>
+            <input id="equipment_type" name="equipment_type" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="equipment_count">Количество единиц оборудования</label>
+            <input id="equipment_count" name="equipment_count" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="critical_equipment">Критичное оборудование</label>
+            <input id="critical_equipment" name="critical_equipment" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="operation_mode">Режим работы</label>
+            <input id="operation_mode" name="operation_mode" type="text" placeholder="Например: 24/7, 2 смены, 5/2" />
+          </div>
+
+          <div class="field full">
+            <label for="main_failures">Основные отказы / поломки</label>
+            <textarea id="main_failures" name="main_failures"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="average_downtime">Средняя длительность простоя</label>
+            <input id="average_downtime" name="average_downtime" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="downtime_hour_cost">Стоимость часа простоя</label>
+            <input id="downtime_hour_cost" name="downtime_hour_cost" type="text" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3 class="subsection-title">3.2 Линии / участки / операции</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label for="lines_count">Количество линий / участков</label>
+            <input id="lines_count" name="lines_count" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="main_operations">Основные операции</label>
+            <input id="main_operations" name="main_operations" type="text" />
+          </div>
+
+          <div class="field full">
+            <label for="bottlenecks">Узкие места</label>
+            <textarea id="bottlenecks" name="bottlenecks"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="changeover_frequency">Частота переналадок</label>
+            <input id="changeover_frequency" name="changeover_frequency" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="changeover_duration">Среднее время переналадки</label>
+            <input id="changeover_duration" name="changeover_duration" type="text" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3 class="subsection-title">3.3 Продукция / партии / материалы</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label for="product_types">Тип продукции / SKU</label>
+            <input id="product_types" name="product_types" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="batch_tracking">Есть ли партии / batch tracking</label>
+            <select id="batch_tracking" name="batch_tracking">
+              <option value="">Не указано</option>
+              <option value="yes">Да</option>
+              <option value="no">Нет</option>
+              <option value="partial">Частично</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="critical_materials">Критичные материалы / компоненты</label>
+            <input id="critical_materials" name="critical_materials" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="critical_suppliers">Критичные поставщики</label>
+            <input id="critical_suppliers" name="critical_suppliers" type="text" />
+          </div>
+
+          <div class="field full">
+            <label for="material_issues">Проблемы с материалами / поставками</label>
+            <textarea id="material_issues" name="material_issues" placeholder="Дефициты, задержки, избыточные запасы, аналоги, качество поставок"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>4. Данные</h2>
+        <p class="section-description">
+          Укажите, какие данные есть и насколько они пригодны для MVP.
+        </p>
+
+        <div class="field">
+          <label>Доступные источники данных</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="data_sources" value="erp" /> ERP</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="1c" /> 1C</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="mes" /> MES</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="scada" /> SCADA</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="wms" /> WMS</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="excel" /> Excel</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="repair_logs" /> Журналы ремонтов</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="shift_logs" /> Журналы смен</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="downtime_logs" /> Журналы простоев</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="quality_logs" /> Журналы качества / ОТК</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="sensor_data" /> Данные датчиков</label>
+            <label class="check"><input type="checkbox" name="data_sources" value="supply_data" /> Данные закупок / поставщиков</label>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="data_period">Период исторических данных</label>
+            <input id="data_period" name="data_period" type="text" placeholder="Например: 3 месяца, 12 месяцев, 2 года" />
+          </div>
+
+          <div class="field">
+            <label for="data_frequency">Частота данных</label>
+            <select id="data_frequency" name="data_frequency">
+              <option value="">Не указано</option>
+              <option value="event">По событию</option>
+              <option value="daily">Ежедневно</option>
+              <option value="shift">Посменно</option>
+              <option value="hourly">Ежечасно</option>
+              <option value="minute">Поминутно</option>
+              <option value="realtime">В реальном времени</option>
+              <option value="mixed">Смешанная частота</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="data_identifiers">Идентификаторы в данных</label>
+            <textarea id="data_identifiers" name="data_identifiers" placeholder="ID заказа, партии, оборудования, операции, смены, ремонта, поставщика, материала"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="data_timestamps">Временные метки</label>
+            <textarea id="data_timestamps" name="data_timestamps" placeholder="Старт/завершение операции, начало/конец простоя, ремонт, контроль качества, поставка, отгрузка"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Проблемы качества данных</label>
+            <div class="checks">
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="duplicates" /> Дубли</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="missing_values" /> Пропуски</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="manual_input" /> Ручной ввод</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="inconsistent_statuses" /> Разные статусы</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="no_single_id" /> Нет единого ID</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="no_system_links" /> Нет связки между системами</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="no_downtime_reasons" /> Нет причин простоев</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="no_defect_reasons" /> Нет причин брака</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="paper_logs" /> Данные в бумажных журналах</label>
+              <label class="check"><input type="checkbox" name="data_quality_issues" value="unknown" /> Требует уточнения</label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5. Системы и интеграции</h2>
+        <p class="section-description">
+          Для MVP часто достаточно ручной Excel/CSV-выгрузки. Глубокие интеграции можно отложить до подтверждения эффекта.
+        </p>
+
+        <div class="grid three">
+          <div class="field">
+            <label for="erp_status">1C / ERP</label>
+            <select id="erp_status" name="erp_status">
+              <option value="">UNKNOWN</option>
+              <option value="yes">YES</option>
+              <option value="no">NO</option>
+              <option value="partial">PARTIAL</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="mes_status">MES</label>
+            <select id="mes_status" name="mes_status">
+              <option value="">UNKNOWN</option>
+              <option value="yes">YES</option>
+              <option value="no">NO</option>
+              <option value="partial">PARTIAL</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="scada_status">SCADA</label>
+            <select id="scada_status" name="scada_status">
+              <option value="">UNKNOWN</option>
+              <option value="yes">YES</option>
+              <option value="no">NO</option>
+              <option value="partial">PARTIAL</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="wms_status">WMS</label>
+            <select id="wms_status" name="wms_status">
+              <option value="">UNKNOWN</option>
+              <option value="yes">YES</option>
+              <option value="no">NO</option>
+              <option value="partial">PARTIAL</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="excel_export_status">Excel / CSV выгрузка</label>
+            <select id="excel_export_status" name="excel_export_status">
+              <option value="">UNKNOWN</option>
+              <option value="yes">YES</option>
+              <option value="no">NO</option>
+              <option value="partial">PARTIAL</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="api_status">API</label>
+            <select id="api_status" name="api_status">
+              <option value="">UNKNOWN</option>
+              <option value="yes">YES</option>
+              <option value="no">NO</option>
+              <option value="partial">PARTIAL</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="critical_integrations">Интеграции, критичные для MVP</label>
+            <textarea id="critical_integrations" name="critical_integrations"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="deferred_integrations">Интеграции, которые можно отложить</label>
+            <textarea id="deferred_integrations" name="deferred_integrations"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>6. ИБ, ПДн и коммерческая тайна</h2>
+        <p class="section-description">
+          Укажите ограничения по передаче и обработке данных. Для MVP можно использовать обезличенную тестовую выгрузку.
+        </p>
+
+        <div class="field">
+          <label>Чувствительные данные</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="sensitive_data" value="employee_personal_data" /> ПДн сотрудников</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="client_personal_data" /> ПДн клиентов</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="commercial_secret" /> Коммерческая тайна</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="cost_price" /> Себестоимость</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="prices" /> Цены</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="suppliers" /> Поставщики</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="recipes" /> Рецептуры / технологии</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="drawings" /> Чертежи</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="production_volume" /> Объёмы производства</label>
+            <label class="check"><input type="checkbox" name="sensitive_data" value="none" /> Нет / не ожидается</label>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="nda_status">NDA</label>
+            <select id="nda_status" name="nda_status">
+              <option value="">Не указано</option>
+              <option value="required">Требуется</option>
+              <option value="signed">Уже подписан</option>
+              <option value="not_required">Не требуется</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="cloud_allowed">Разрешена облачная обработка</label>
+            <select id="cloud_allowed" name="cloud_allowed">
+              <option value="">Не указано</option>
+              <option value="yes">Да</option>
+              <option value="no">Нет</option>
+              <option value="unknown">Требует уточнения</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="data_transfer_allowed">Можно передавать данные AIha</label>
+            <select id="data_transfer_allowed" name="data_transfer_allowed">
+              <option value="">Не указано</option>
+              <option value="yes">Да</option>
+              <option value="no">Нет</option>
+              <option value="anonymized_only">Только обезличенно</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="preferred_processing">Предпочтительная обработка</label>
+            <select id="preferred_processing" name="preferred_processing">
+              <option value="">Не указано</option>
+              <option value="local">Локально</option>
+              <option value="client_server">Сервер клиента</option>
+              <option value="aiha_server">Сервер AIha</option>
+              <option value="cloud">Облако</option>
+              <option value="hybrid">Гибрид</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="anonymization_requirements">Что нужно обезличить / удалить</label>
+            <textarea id="anonymization_requirements" name="anonymization_requirements"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="security_notes">Дополнительные ограничения ИБ</label>
+            <textarea id="security_notes" name="security_notes"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>7. Экономика проблемы</h2>
+        <p class="section-description">
+          Укажите хотя бы приблизительные потери. Если точных цифр нет, напишите “требует уточнения”.
+        </p>
+
+        <div class="field">
+          <label>Основная зона потерь</label>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="loss_areas" value="downtime" /> Простои</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="repairs" /> Аварийные ремонты</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="defects" /> Брак</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="rework" /> Повторная обработка</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="late_orders" /> Просрочки заказов</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="stockouts" /> Дефициты</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="excess_inventory" /> Избыточные запасы</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="manual_work" /> Ручной труд</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="energy" /> Энергозатраты</label>
+            <label class="check"><input type="checkbox" name="loss_areas" value="claims" /> Рекламации</label>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="downtime_events_per_month">Количество простоев в месяц</label>
+            <input id="downtime_events_per_month" name="downtime_events_per_month" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="defect_rate">Процент брака</label>
+            <input id="defect_rate" name="defect_rate" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="defect_cost_per_month">Стоимость брака в месяц</label>
+            <input id="defect_cost_per_month" name="defect_cost_per_month" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="inventory_value">Стоимость запасов</label>
+            <input id="inventory_value" name="inventory_value" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="manual_labor_hours">Ручные трудозатраты</label>
+            <input id="manual_labor_hours" name="manual_labor_hours" type="text" placeholder="Например: 40 часов в неделю" />
+          </div>
+
+          <div class="field">
+            <label for="monthly_loss_estimate">Оценка потерь в месяц</label>
+            <input id="monthly_loss_estimate" name="monthly_loss_estimate" type="text" />
+          </div>
+
+          <div class="field full">
+            <label for="meaningful_effect">Какой эффект считается значимым</label>
+            <textarea id="meaningful_effect" name="meaningful_effect" placeholder="Например: минус 10% простоев, минус 15% брака, снижение запасов на 5 млн ₽"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>8. MVP-рамка</h2>
+        <p class="section-description">
+          Для первого MVP выберите один кейс, ограниченный участок и измеримые критерии успеха.
+        </p>
+
+        <div class="grid">
+          <div class="field full">
+            <label for="mvp_case">Какой один кейс берём в первый MVP <span class="required">*</span></label>
+            <textarea id="mvp_case" name="mvp_case" required placeholder="Например: прогноз риска отказа для 5 критичных насосов на линии №2"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="mvp_reason">Почему именно этот кейс</label>
+            <textarea id="mvp_reason" name="mvp_reason" placeholder="Боль, доступные данные, понятный эффект, низкая сложность запуска"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="mvp_unit">Участок / линия / оборудование</label>
+            <input id="mvp_unit" name="mvp_unit" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="mvp_data_period">Период данных для MVP</label>
+            <input id="mvp_data_period" name="mvp_data_period" type="text" />
+          </div>
+
+          <div class="field">
+            <label for="mvp_test_period">Период теста</label>
+            <select id="mvp_test_period" name="mvp_test_period">
+              <option value="">Не указано</option>
+              <option value="2_weeks">2 недели</option>
+              <option value="4_weeks">4 недели</option>
+              <option value="6_weeks">6 недель</option>
+              <option value="other">Другой период</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="human_control">Что остаётся под контролем человека</label>
+            <input id="human_control" name="human_control" type="text" />
+          </div>
+
+          <div class="field full">
+            <label for="mvp_exclusions">Что точно не входит в MVP</label>
+            <textarea id="mvp_exclusions" name="mvp_exclusions" placeholder="Например: все цеха, полная интеграция, автоматическое принятие решений без человека"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="mvp_success_criteria">Критерии успеха MVP</label>
+            <textarea id="mvp_success_criteria" name="mvp_success_criteria" placeholder="Критерий → как измеряем → целевое значение"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="mvp_go_criterion">GO-критерий после MVP</label>
+            <textarea id="mvp_go_criterion" name="mvp_go_criterion"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="mvp_no_go_criterion">NO-GO-критерий после MVP</label>
+            <textarea id="mvp_no_go_criterion" name="mvp_no_go_criterion"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>9. Файлы и материалы</h2>
+        <p class="section-description">
+          Приложите выгрузки, журналы, скриншоты, описания процесса или заполненный DOCX/PDF.
+        </p>
+
+        <div class="upload-box">
+          <div class="field">
+            <label for="attachments">Файлы</label>
+            <input id="attachments" name="attachments" type="file" multiple />
+            <div class="hint">
+              Подходят: XLSX, CSV, PDF, DOCX, TXT, PNG, JPG. Например: выгрузки ERP/1C/MES/SCADA,
+              журналы ремонтов, простои, брак, план-факт, поставки, скриншоты систем.
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 16px;">
+          <label for="additional_comments">Дополнительные комментарии</label>
+          <textarea id="additional_comments" name="additional_comments"></textarea>
+        </div>
+      </section>
+
+      <section class="submit-panel">
+        <p>
+          После отправки brief будет использован для D-001 Diagnostic Assessment и дальнейшего
+          проектирования MVP. При необходимости мы уточним данные на коротком созвоне.
+        </p>
+
+        <button class="btn success" type="submit">Отправить Industrial AI Brief</button>
+      </section>
+    </form>
+  </main>
+</body>
+</html>

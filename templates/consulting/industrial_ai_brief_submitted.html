@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Industrial AI Brief отправлен — AIha Consulting</title>
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #11182c;
+      --card-soft: #151e35;
+      --text: #f4f7fb;
+      --muted: #aab4c6;
+      --line: rgba(255, 255, 255, 0.12);
+      --accent: #7c5cff;
+      --accent-2: #21c7a8;
+      --warning: #ffd166;
+      --input: #0e1528;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(124, 92, 255, 0.24), transparent 32%),
+        radial-gradient(circle at top right, rgba(33, 199, 168, 0.18), transparent 32%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(980px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0 72px;
+    }
+
+    .card {
+      padding: 36px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(17, 24, 44, 0.94), rgba(21, 30, 53, 0.86));
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border: 1px solid rgba(33, 199, 168, 0.32);
+      border-radius: 999px;
+      color: #dffcf6;
+      font-size: 13px;
+      margin-bottom: 18px;
+      background: rgba(33, 199, 168, 0.08);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 0 5px rgba(33, 199, 168, 0.14);
+    }
+
+    h1 {
+      font-size: clamp(32px, 4vw, 52px);
+      line-height: 1.05;
+      margin: 0 0 16px;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    h3 {
+      margin: 24px 0 10px;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    .lead {
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta span {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .btn {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 44px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+      background: var(--accent);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--line);
+    }
+
+    .btn.success {
+      background: var(--accent-2);
+      color: #06130f;
+    }
+
+    .section {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(17, 24, 44, 0.86);
+      margin-bottom: 24px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(124, 92, 255, 0.18);
+      color: #d9d0ff;
+      font-weight: 800;
+    }
+
+    .step-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .step-text {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .notice {
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 209, 102, 0.28);
+      background: rgba(255, 209, 102, 0.08);
+      color: #fff2c7;
+      margin-top: 18px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .summary-item {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .summary-label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-weight: 750;
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      padding-top: 12px;
+    }
+
+    @media (max-width: 760px) {
+      .card,
+      .section {
+        padding: 22px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  {% set run = diagnostic_run if diagnostic_run is defined else (diagnostic if diagnostic is defined else None) %}
+
+  <main class="page">
+    <section class="card">
+      <div class="eyebrow">
+        <span class="status-dot"></span>
+        Industrial AI Brief отправлен
+      </div>
+
+      <h1>Спасибо, brief получен</h1>
+
+      <p class="lead">
+        Мы получили Industrial AI Brief и приложенные материалы. Данные будут использованы для
+        D-001 Diagnostic Assessment, после чего можно будет перейти к проектированию MVP для выбранного
+        производственного AI-кейса.
+      </p>
+
+      <div class="meta">
+        <span>Diagnostic ID: {% if run %}{{ run.id }}{% else %}—{% endif %}</span>
+        <span>Token: {{ token|default("—", true) }}</span>
+        <span>Brief type: industrial_ai</span>
+        <span>Версия: v1</span>
+      </div>
+
+      <div class="actions">
+        {% if download_docx_url %}
+          <a class="btn success" href="{{ download_docx_url }}">Скачать заполненный DOCX</a>
+        {% endif %}
+
+        {% if download_pdf_url %}
+          <a class="btn secondary" href="{{ download_pdf_url }}">Скачать заполненный PDF</a>
+        {% endif %}
+
+        {% if input_url %}
+          <a class="btn secondary" href="{{ input_url }}">Вернуться к форме</a>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Что будет дальше</h2>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div>
+            <div class="step-title">Проверка входных данных</div>
+            <p class="step-text">
+              Проверяем заполненный brief, приложенные файлы, доступные источники данных,
+              ограничения ИБ и достаточность информации для диагностики.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div>
+            <div class="step-title">D-001 Diagnostic Assessment</div>
+            <p class="step-text">
+              Оцениваем производственный процесс, данные, интеграции, экономику, риски
+              и готовность к MVP.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div>
+            <div class="step-title">D-002 MVP Design</div>
+            <p class="step-text">
+              Формируем минимальную границу MVP: один кейс, один участок или объект анализа,
+              измеримые критерии успеха и реалистичный план пилота.
+            </p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <div>
+            <div class="step-title">D-003 / D-004</div>
+            <p class="step-text">
+              Готовим итоговый диагностический отчёт и коммерческое предложение на следующий этап:
+              подготовительный этап, MVP-пилот или отложенное масштабирование.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="notice">
+        Если в brief не хватает данных по оборудованию, выгрузкам, простоям, браку, поставкам,
+        экономике или ИБ, мы зафиксируем это как “требует уточнения” и запросим недостающую информацию
+        до запуска MVP.
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Ключевые критерии для перехода к MVP</h2>
+
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-label">Кейс MVP</div>
+          <div class="summary-value">Выбран один производственный AI-кейс</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">Данные</div>
+          <div class="summary-value">Есть выгрузка или понятный способ её получить</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">Экономика</div>
+          <div class="summary-value">Понятна зона потерь и ожидаемый эффект</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">ИБ / коммерческая тайна</div>
+          <div class="summary-value">Согласованы правила передачи и обработки данных</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">Владелец процесса</div>
+          <div class="summary-value">Назначен ответственный за решения по процессу</div>
+        </div>
+
+        <div class="summary-item">
+          <div class="summary-label">Критерии успеха</div>
+          <div class="summary-value">Определены GO / NO-GO условия после MVP</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      AIha Consulting · Industrial AI Brief · Diagnostic Input Pack extension
+    </footer>
+  </main>
+</body>
+</html>

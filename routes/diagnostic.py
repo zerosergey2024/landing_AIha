@@ -1175,3 +1175,1072 @@ def download_submitted_input_pack(token: str, file_format: str):
     response.call_on_close(lambda: output_path.unlink(missing_ok=True))
 
     return response
+
+INDUSTRIAL_AI_VALUE_LABELS = {
+    "failure_prediction": "Прогнозирование поломок оборудования",
+    "predictive_maintenance": "Предиктивное обслуживание",
+    "downtime_analysis": "Анализ простоев",
+    "schedule_optimization": "Оптимизация производственного графика",
+    "production_plan_fact": "План-факт производства",
+    "quality_control": "Контроль качества / анализ брака",
+    "supply_chain": "Анализ цепочки поставок",
+    "inventory": "Управление запасами",
+    "energy": "Энергопотребление",
+    "other": "Другое",
+
+    "reduce_downtime": "Снизить простои",
+    "reduce_repairs": "Снизить аварийные ремонты",
+    "reduce_defects": "Сократить брак",
+    "increase_oee": "Повысить OEE",
+    "improve_otd": "Улучшить выполнение заказов в срок",
+    "reduce_inventory": "Снизить запасы",
+    "reduce_stockouts": "Сократить дефициты",
+    "improve_planning": "Повысить точность планирования",
+    "reduce_energy_cost": "Снизить энергозатраты",
+    "reduce_manual_work": "Снизить ручной труд",
+
+    "erp": "ERP",
+    "1c": "1C",
+    "mes": "MES",
+    "scada": "SCADA",
+    "wms": "WMS",
+    "excel": "Excel",
+    "repair_logs": "Журналы ремонтов",
+    "shift_logs": "Журналы смен",
+    "downtime_logs": "Журналы простоев",
+    "quality_logs": "Журналы качества / ОТК",
+    "sensor_data": "Данные датчиков",
+    "supply_data": "Данные закупок / поставщиков",
+
+    "duplicates": "Дубли",
+    "missing_values": "Пропуски",
+    "manual_input": "Ручной ввод",
+    "inconsistent_statuses": "Разные статусы",
+    "no_single_id": "Нет единого ID",
+    "no_system_links": "Нет связки между системами",
+    "no_downtime_reasons": "Нет причин простоев",
+    "no_defect_reasons": "Нет причин брака",
+    "paper_logs": "Данные в бумажных журналах",
+    "unknown": "Требует уточнения",
+
+    "event": "По событию",
+    "daily": "Ежедневно",
+    "shift": "Посменно",
+    "hourly": "Ежечасно",
+    "minute": "Поминутно",
+    "realtime": "В реальном времени",
+    "mixed": "Смешанная частота",
+
+    "yes": "Да",
+    "no": "Нет",
+    "partial": "Частично",
+
+    "required": "Требуется",
+    "signed": "Уже подписан",
+    "not_required": "Не требуется",
+
+    "anonymized_only": "Только обезличенно",
+
+    "local": "Локально",
+    "client_server": "Сервер клиента",
+    "aiha_server": "Сервер AIha",
+    "cloud": "Облако",
+    "hybrid": "Гибрид",
+
+    "employee_personal_data": "ПДн сотрудников",
+    "client_personal_data": "ПДн клиентов",
+    "commercial_secret": "Коммерческая тайна",
+    "cost_price": "Себестоимость",
+    "prices": "Цены",
+    "suppliers": "Поставщики",
+    "recipes": "Рецептуры / технологии",
+    "drawings": "Чертежи",
+    "production_volume": "Объёмы производства",
+    "none": "Нет / не ожидается",
+
+    "downtime": "Простои",
+    "repairs": "Аварийные ремонты",
+    "defects": "Брак",
+    "rework": "Повторная обработка",
+    "late_orders": "Просрочки заказов",
+    "stockouts": "Дефициты",
+    "excess_inventory": "Избыточные запасы",
+    "manual_work": "Ручной труд",
+    "energy": "Энергозатраты",
+    "claims": "Рекламации",
+
+    "2_weeks": "2 недели",
+    "4_weeks": "4 недели",
+    "6_weeks": "6 недель",
+}
+
+
+INDUSTRIAL_AI_BRIEF_SECTIONS = [
+    (
+        "1. Тип производственного AI-кейса",
+        [
+            ("Основной тип кейса", "case_type.primary_case_type"),
+            ("Другое / уточнение", "case_type.primary_case_type_other"),
+            ("Главные бизнес-цели", "case_type.business_goals"),
+            ("Ключевой ожидаемый эффект", "case_type.expected_effect"),
+        ],
+    ),
+    (
+        "2. Производственный контекст",
+        [
+            ("Компания / подразделение", "production_context.company_name"),
+            ("Производственная площадка", "production_context.production_site"),
+            ("Цех / участок / линия", "production_context.unit_or_line"),
+            ("Владелец процесса", "production_context.process_owner"),
+            ("Технический контакт", "production_context.technical_contact"),
+            ("Контакт по данным / ИТ", "production_context.data_contact"),
+            ("Описание текущего процесса", "production_context.current_process_description"),
+            ("Где начинается процесс", "production_context.process_start"),
+            ("Где заканчивается процесс", "production_context.process_end"),
+            ("Что входит в анализ", "production_context.in_scope"),
+            ("Что не входит в анализ", "production_context.out_of_scope"),
+        ],
+    ),
+    (
+        "3. Объект анализа — оборудование",
+        [
+            ("Тип оборудования", "analysis_object.equipment.equipment_type"),
+            ("Количество единиц оборудования", "analysis_object.equipment.equipment_count"),
+            ("Критичное оборудование", "analysis_object.equipment.critical_equipment"),
+            ("Режим работы", "analysis_object.equipment.operation_mode"),
+            ("Основные отказы / поломки", "analysis_object.equipment.main_failures"),
+            ("Средняя длительность простоя", "analysis_object.equipment.average_downtime"),
+            ("Стоимость часа простоя", "analysis_object.equipment.downtime_hour_cost"),
+        ],
+    ),
+    (
+        "4. Объект анализа — линии, операции, материалы",
+        [
+            ("Количество линий / участков", "analysis_object.lines_operations.lines_count"),
+            ("Основные операции", "analysis_object.lines_operations.main_operations"),
+            ("Узкие места", "analysis_object.lines_operations.bottlenecks"),
+            ("Частота переналадок", "analysis_object.lines_operations.changeover_frequency"),
+            ("Среднее время переналадки", "analysis_object.lines_operations.changeover_duration"),
+            ("Тип продукции / SKU", "analysis_object.products_materials.product_types"),
+            ("Есть ли партии / batch tracking", "analysis_object.products_materials.batch_tracking"),
+            ("Критичные материалы / компоненты", "analysis_object.products_materials.critical_materials"),
+            ("Критичные поставщики", "analysis_object.products_materials.critical_suppliers"),
+            ("Проблемы с материалами / поставками", "analysis_object.products_materials.material_issues"),
+        ],
+    ),
+    (
+        "5. Данные",
+        [
+            ("Доступные источники данных", "data.data_sources"),
+            ("Период исторических данных", "data.data_period"),
+            ("Частота данных", "data.data_frequency"),
+            ("Идентификаторы в данных", "data.data_identifiers"),
+            ("Временные метки", "data.data_timestamps"),
+            ("Проблемы качества данных", "data.data_quality_issues"),
+        ],
+    ),
+    (
+        "6. Системы и интеграции",
+        [
+            ("1C / ERP", "systems_integrations.erp_status"),
+            ("MES", "systems_integrations.mes_status"),
+            ("SCADA", "systems_integrations.scada_status"),
+            ("WMS", "systems_integrations.wms_status"),
+            ("Excel / CSV выгрузка", "systems_integrations.excel_export_status"),
+            ("API", "systems_integrations.api_status"),
+            ("Интеграции, критичные для MVP", "systems_integrations.critical_integrations"),
+            ("Интеграции, которые можно отложить", "systems_integrations.deferred_integrations"),
+        ],
+    ),
+    (
+        "7. ИБ, ПДн и коммерческая тайна",
+        [
+            ("Чувствительные данные", "security.sensitive_data"),
+            ("NDA", "security.nda_status"),
+            ("Разрешена облачная обработка", "security.cloud_allowed"),
+            ("Можно передавать данные AIha", "security.data_transfer_allowed"),
+            ("Предпочтительная обработка", "security.preferred_processing"),
+            ("Что нужно обезличить / удалить", "security.anonymization_requirements"),
+            ("Дополнительные ограничения ИБ", "security.security_notes"),
+        ],
+    ),
+    (
+        "8. Экономика проблемы",
+        [
+            ("Основная зона потерь", "economics.loss_areas"),
+            ("Количество простоев в месяц", "economics.downtime_events_per_month"),
+            ("Процент брака", "economics.defect_rate"),
+            ("Стоимость брака в месяц", "economics.defect_cost_per_month"),
+            ("Стоимость запасов", "economics.inventory_value"),
+            ("Ручные трудозатраты", "economics.manual_labor_hours"),
+            ("Оценка потерь в месяц", "economics.monthly_loss_estimate"),
+            ("Какой эффект считается значимым", "economics.meaningful_effect"),
+        ],
+    ),
+    (
+        "9. MVP-рамка",
+        [
+            ("Какой один кейс берём в первый MVP", "mvp.mvp_case"),
+            ("Почему именно этот кейс", "mvp.mvp_reason"),
+            ("Участок / линия / оборудование", "mvp.mvp_unit"),
+            ("Период данных для MVP", "mvp.mvp_data_period"),
+            ("Период теста", "mvp.mvp_test_period"),
+            ("Что остаётся под контролем человека", "mvp.human_control"),
+            ("Что точно не входит в MVP", "mvp.mvp_exclusions"),
+            ("Критерии успеха MVP", "mvp.mvp_success_criteria"),
+            ("GO-критерий после MVP", "mvp.mvp_go_criterion"),
+            ("NO-GO-критерий после MVP", "mvp.mvp_no_go_criterion"),
+        ],
+    ),
+    (
+        "10. Дополнительно",
+        [
+            ("Дополнительные комментарии", "additional_comments"),
+        ],
+    ),
+]
+
+
+def _industrial_ai_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+
+    industrial_ai = payload.get("industrial_ai")
+
+    if isinstance(industrial_ai, dict):
+        return industrial_ai
+
+    return payload
+
+
+def _industrial_ai_get(payload: dict[str, Any], path: str) -> Any:
+    current: Any = _industrial_ai_payload(payload)
+
+    for part in path.split("."):
+        if not isinstance(current, dict):
+            return None
+
+        current = current.get(part)
+
+    return current
+
+
+def _industrial_ai_format_value(value: Any) -> str:
+    if value is None:
+        return "не указано"
+
+    if isinstance(value, list):
+        if not value:
+            return "не указано"
+
+        return ", ".join(
+            INDUSTRIAL_AI_VALUE_LABELS.get(str(item), str(item))
+            for item in value
+            if str(item).strip()
+        ) or "не указано"
+
+    if isinstance(value, bool):
+        return "Да" if value else "Нет"
+
+    text = str(value).strip()
+
+    if not text:
+        return "не указано"
+
+    return INDUSTRIAL_AI_VALUE_LABELS.get(text, text)
+
+
+def _industrial_ai_docx_add_paragraph(
+    document: Any,
+    text: str,
+    *,
+    bold: bool = False,
+    italic: bool = False,
+    size: int | None = None,
+) -> Any:
+    paragraph = document.add_paragraph()
+    run = paragraph.add_run(text)
+    run.bold = bold
+    run.italic = italic
+
+    if size is not None:
+        from docx.shared import Pt
+
+        run.font.size = Pt(size)
+
+    return paragraph
+
+
+def _industrial_ai_docx_add_table(document: Any, rows: list[tuple[str, str]]) -> Any:
+    table = document.add_table(rows=1, cols=2)
+    table.style = "Table Grid"
+
+    header_cells = table.rows[0].cells
+    header_cells[0].text = "Поле"
+    header_cells[1].text = "Значение"
+
+    for label, value in rows:
+        cells = table.add_row().cells
+        cells[0].text = label
+        cells[1].text = value
+
+    return table
+
+
+def _industrial_ai_pdf_register_font() -> str:
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+    except ImportError as exc:
+        raise RuntimeError(
+            "Для генерации PDF установите зависимость: pip install reportlab"
+        ) from exc
+
+    font_candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        "/System/Library/Fonts/Arial.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+    ]
+
+    for font_path in font_candidates:
+        if Path(font_path).exists():
+            font_name = "AIhaIndustrialSans"
+
+            if font_name not in pdfmetrics.getRegisteredFontNames():
+                pdfmetrics.registerFont(TTFont(font_name, font_path))
+
+            return font_name
+
+    return "Helvetica"
+
+
+def _industrial_ai_pdf_paragraph(text: str, style: Any) -> Any:
+    from html import escape as html_escape
+    from reportlab.platypus import Paragraph
+
+    safe_text = html_escape(text or "").replace("\n", "<br/>")
+    return Paragraph(safe_text, style)
+
+
+def _build_industrial_ai_blank_docx(
+    *,
+    output_path: Path,
+    diagnostic_run: dict[str, Any],
+) -> None:
+    try:
+        from docx import Document
+        from docx.enum.section import WD_SECTION
+        from docx.shared import Inches, Pt
+    except ImportError as exc:
+        raise RuntimeError(
+            "Для генерации DOCX установите зависимость: pip install python-docx"
+        ) from exc
+
+    document = Document()
+
+    section = document.sections[0]
+    section.top_margin = Inches(0.65)
+    section.bottom_margin = Inches(0.65)
+    section.left_margin = Inches(0.65)
+    section.right_margin = Inches(0.65)
+
+    styles = document.styles
+    styles["Normal"].font.name = "Arial"
+    styles["Normal"].font.size = Pt(10)
+
+    title = document.add_heading("Industrial AI Brief", level=0)
+    title.runs[0].font.name = "Arial"
+
+    _industrial_ai_docx_add_paragraph(
+        document,
+        "Специализированный brief для производственных AI-кейсов. "
+        "Заполняется как приложение к Base AI Audit Brief.",
+        italic=True,
+    )
+
+    _industrial_ai_docx_add_paragraph(
+        document,
+        f"Diagnostic ID: {diagnostic_run.get('id', '—')}",
+    )
+    _industrial_ai_docx_add_paragraph(document, "Brief type: industrial_ai")
+    _industrial_ai_docx_add_paragraph(document, "Brief version: v1")
+
+    document.add_paragraph()
+
+    _industrial_ai_docx_add_paragraph(
+        document,
+        "Инструкция: заполните только релевантные поля. "
+        "Если информация отсутствует, укажите «не указано» или «требует уточнения».",
+        bold=True,
+    )
+
+    for section_title, fields in INDUSTRIAL_AI_BRIEF_SECTIONS:
+        document.add_heading(section_title, level=1)
+
+        rows = []
+        for label, _path in fields:
+            rows.append((label, ""))
+
+        _industrial_ai_docx_add_table(document, rows)
+        document.add_paragraph()
+
+    document.add_page_break()
+
+    document.add_heading("Вопросы для созвона", level=1)
+
+    questions = [
+        "Какой производственный кейс является самым болезненным сейчас?",
+        "Где есть данные за последние 3–12 месяцев?",
+        "Можно ли начать с выгрузки Excel/CSV без интеграций?",
+        "Кто владелец процесса и кто принимает решение?",
+        "Какой экономический эффект считается значимым?",
+        "Какие данные нельзя передавать наружу?",
+        "Можно ли обезличить тестовую выгрузку?",
+        "Какие ограничения есть по ИБ и коммерческой тайне?",
+        "Какой участок / линия / оборудование подходят для первого MVP?",
+        "Какой результат через 4–6 недель будет считаться успехом?",
+    ]
+
+    for question in questions:
+        document.add_paragraph(question, style="List Number")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    document.save(output_path)
+
+
+def _build_industrial_ai_blank_pdf(
+    *,
+    output_path: Path,
+    diagnostic_run: dict[str, Any],
+) -> None:
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import (
+            PageBreak,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
+    except ImportError as exc:
+        raise RuntimeError(
+            "Для генерации PDF установите зависимость: pip install reportlab"
+        ) from exc
+
+    font_name = _industrial_ai_pdf_register_font()
+
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="AIhaTitle",
+            parent=styles["Title"],
+            fontName=font_name,
+            fontSize=22,
+            leading=26,
+            spaceAfter=10,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="AIhaHeading",
+            parent=styles["Heading1"],
+            fontName=font_name,
+            fontSize=14,
+            leading=18,
+            spaceBefore=14,
+            spaceAfter=8,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="AIhaBody",
+            parent=styles["BodyText"],
+            fontName=font_name,
+            fontSize=9,
+            leading=12,
+            spaceAfter=6,
+        )
+    )
+
+    doc = SimpleDocTemplate(
+        str(output_path),
+        pagesize=A4,
+        rightMargin=14 * mm,
+        leftMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=14 * mm,
+    )
+
+    story: list[Any] = []
+
+    story.append(_industrial_ai_pdf_paragraph("Industrial AI Brief", styles["AIhaTitle"]))
+    story.append(
+        _industrial_ai_pdf_paragraph(
+            "Специализированный brief для производственных AI-кейсов. "
+            "Заполняется как приложение к Base AI Audit Brief.",
+            styles["AIhaBody"],
+        )
+    )
+    story.append(
+        _industrial_ai_pdf_paragraph(
+            f"Diagnostic ID: {diagnostic_run.get('id', '—')}<br/>"
+            "Brief type: industrial_ai<br/>"
+            "Brief version: v1",
+            styles["AIhaBody"],
+        )
+    )
+    story.append(Spacer(1, 8))
+
+    for section_title, fields in INDUSTRIAL_AI_BRIEF_SECTIONS:
+        story.append(_industrial_ai_pdf_paragraph(section_title, styles["AIhaHeading"]))
+
+        data = [
+            [
+                _industrial_ai_pdf_paragraph("Поле", styles["AIhaBody"]),
+                _industrial_ai_pdf_paragraph("Значение", styles["AIhaBody"]),
+            ]
+        ]
+
+        for label, _path in fields:
+            data.append(
+                [
+                    _industrial_ai_pdf_paragraph(label, styles["AIhaBody"]),
+                    _industrial_ai_pdf_paragraph("", styles["AIhaBody"]),
+                ]
+            )
+
+        table = Table(data, colWidths=[72 * mm, 96 * mm], repeatRows=1)
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EDEBFF")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111111")),
+                    ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#C8C8D0")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+
+        story.append(table)
+        story.append(Spacer(1, 10))
+
+    story.append(PageBreak())
+    story.append(_industrial_ai_pdf_paragraph("Вопросы для созвона", styles["AIhaHeading"]))
+
+    questions = [
+        "1. Какой производственный кейс является самым болезненным сейчас?",
+        "2. Где есть данные за последние 3–12 месяцев?",
+        "3. Можно ли начать с выгрузки Excel/CSV без интеграций?",
+        "4. Кто владелец процесса и кто принимает решение?",
+        "5. Какой экономический эффект считается значимым?",
+        "6. Какие данные нельзя передавать наружу?",
+        "7. Можно ли обезличить тестовую выгрузку?",
+        "8. Какие ограничения есть по ИБ и коммерческой тайне?",
+        "9. Какой участок / линия / оборудование подходят для первого MVP?",
+        "10. Какой результат через 4–6 недель будет считаться успехом?",
+    ]
+
+    for question in questions:
+        story.append(_industrial_ai_pdf_paragraph(question, styles["AIhaBody"]))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.build(story)
+
+
+def _build_submitted_industrial_ai_docx(
+    *,
+    output_path: Path,
+    diagnostic_run: dict[str, Any],
+    payload: dict[str, Any],
+) -> None:
+    try:
+        from docx import Document
+        from docx.shared import Inches, Pt
+    except ImportError as exc:
+        raise RuntimeError(
+            "Для генерации DOCX установите зависимость: pip install python-docx"
+        ) from exc
+
+    document = Document()
+
+    section = document.sections[0]
+    section.top_margin = Inches(0.65)
+    section.bottom_margin = Inches(0.65)
+    section.left_margin = Inches(0.65)
+    section.right_margin = Inches(0.65)
+
+    styles = document.styles
+    styles["Normal"].font.name = "Arial"
+    styles["Normal"].font.size = Pt(10)
+
+    document.add_heading("Industrial AI Brief — заполненная форма", level=0)
+
+    _industrial_ai_docx_add_paragraph(
+        document,
+        f"Diagnostic ID: {diagnostic_run.get('id', '—')}",
+    )
+    _industrial_ai_docx_add_paragraph(document, "Brief type: industrial_ai")
+    _industrial_ai_docx_add_paragraph(
+        document,
+        f"Brief version: {payload.get('brief_version', 'v1')}",
+    )
+    _industrial_ai_docx_add_paragraph(
+        document,
+        f"Submitted at: {payload.get('submitted_at', 'не указано')}",
+    )
+
+    document.add_paragraph()
+
+    for section_title, fields in INDUSTRIAL_AI_BRIEF_SECTIONS:
+        document.add_heading(section_title, level=1)
+
+        rows = []
+        for label, path in fields:
+            value = _industrial_ai_format_value(_industrial_ai_get(payload, path))
+            rows.append((label, value))
+
+        _industrial_ai_docx_add_table(document, rows)
+        document.add_paragraph()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    document.save(output_path)
+
+
+def _build_submitted_industrial_ai_pdf(
+    *,
+    output_path: Path,
+    diagnostic_run: dict[str, Any],
+    payload: dict[str, Any],
+) -> None:
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle
+    except ImportError as exc:
+        raise RuntimeError(
+            "Для генерации PDF установите зависимость: pip install reportlab"
+        ) from exc
+
+    font_name = _industrial_ai_pdf_register_font()
+
+    styles = getSampleStyleSheet()
+    styles.add(
+        ParagraphStyle(
+            name="AIhaTitle",
+            parent=styles["Title"],
+            fontName=font_name,
+            fontSize=20,
+            leading=24,
+            spaceAfter=10,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="AIhaHeading",
+            parent=styles["Heading1"],
+            fontName=font_name,
+            fontSize=14,
+            leading=18,
+            spaceBefore=14,
+            spaceAfter=8,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="AIhaBody",
+            parent=styles["BodyText"],
+            fontName=font_name,
+            fontSize=9,
+            leading=12,
+            spaceAfter=6,
+        )
+    )
+
+    doc = SimpleDocTemplate(
+        str(output_path),
+        pagesize=A4,
+        rightMargin=14 * mm,
+        leftMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=14 * mm,
+    )
+
+    story: list[Any] = []
+
+    story.append(
+        _industrial_ai_pdf_paragraph(
+            "Industrial AI Brief — заполненная форма",
+            styles["AIhaTitle"],
+        )
+    )
+    story.append(
+        _industrial_ai_pdf_paragraph(
+            f"Diagnostic ID: {diagnostic_run.get('id', '—')}<br/>"
+            "Brief type: industrial_ai<br/>"
+            f"Brief version: {payload.get('brief_version', 'v1')}<br/>"
+            f"Submitted at: {payload.get('submitted_at', 'не указано')}",
+            styles["AIhaBody"],
+        )
+    )
+    story.append(Spacer(1, 8))
+
+    for section_title, fields in INDUSTRIAL_AI_BRIEF_SECTIONS:
+        story.append(_industrial_ai_pdf_paragraph(section_title, styles["AIhaHeading"]))
+
+        data = [
+            [
+                _industrial_ai_pdf_paragraph("Поле", styles["AIhaBody"]),
+                _industrial_ai_pdf_paragraph("Значение", styles["AIhaBody"]),
+            ]
+        ]
+
+        for label, path in fields:
+            value = _industrial_ai_format_value(_industrial_ai_get(payload, path))
+            data.append(
+                [
+                    _industrial_ai_pdf_paragraph(label, styles["AIhaBody"]),
+                    _industrial_ai_pdf_paragraph(value, styles["AIhaBody"]),
+                ]
+            )
+
+        table = Table(data, colWidths=[68 * mm, 100 * mm], repeatRows=1)
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EDEBFF")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#111111")),
+                    ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#C8C8D0")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 5),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+
+        story.append(table)
+        story.append(Spacer(1, 10))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.build(story)
+
+def _industrial_form_text(name: str) -> str:
+    return request.form.get(name, "").strip()
+
+
+def _industrial_form_list(name: str) -> list[str]:
+    return [
+        value.strip()
+        for value in request.form.getlist(name)
+        if value and value.strip()
+    ]
+
+
+def _build_industrial_ai_brief_payload() -> dict[str, Any]:
+    return {
+        "brief_type": "industrial_ai",
+        "brief_version": "v1",
+        "source": "web_form",
+        "submitted_at": datetime.utcnow().isoformat(),
+        "industrial_ai": {
+            "case_type": {
+                "primary_case_type": _industrial_form_text("primary_case_type"),
+                "primary_case_type_other": _industrial_form_text("primary_case_type_other"),
+                "business_goals": _industrial_form_list("business_goals"),
+                "expected_effect": _industrial_form_text("expected_effect"),
+            },
+            "production_context": {
+                "company_name": _industrial_form_text("company_name"),
+                "production_site": _industrial_form_text("production_site"),
+                "unit_or_line": _industrial_form_text("unit_or_line"),
+                "process_owner": _industrial_form_text("process_owner"),
+                "technical_contact": _industrial_form_text("technical_contact"),
+                "data_contact": _industrial_form_text("data_contact"),
+                "current_process_description": _industrial_form_text("current_process_description"),
+                "process_start": _industrial_form_text("process_start"),
+                "process_end": _industrial_form_text("process_end"),
+                "in_scope": _industrial_form_text("in_scope"),
+                "out_of_scope": _industrial_form_text("out_of_scope"),
+            },
+            "analysis_object": {
+                "equipment": {
+                    "equipment_type": _industrial_form_text("equipment_type"),
+                    "equipment_count": _industrial_form_text("equipment_count"),
+                    "critical_equipment": _industrial_form_text("critical_equipment"),
+                    "operation_mode": _industrial_form_text("operation_mode"),
+                    "main_failures": _industrial_form_text("main_failures"),
+                    "average_downtime": _industrial_form_text("average_downtime"),
+                    "downtime_hour_cost": _industrial_form_text("downtime_hour_cost"),
+                },
+                "lines_operations": {
+                    "lines_count": _industrial_form_text("lines_count"),
+                    "main_operations": _industrial_form_text("main_operations"),
+                    "bottlenecks": _industrial_form_text("bottlenecks"),
+                    "changeover_frequency": _industrial_form_text("changeover_frequency"),
+                    "changeover_duration": _industrial_form_text("changeover_duration"),
+                },
+                "products_materials": {
+                    "product_types": _industrial_form_text("product_types"),
+                    "batch_tracking": _industrial_form_text("batch_tracking"),
+                    "critical_materials": _industrial_form_text("critical_materials"),
+                    "critical_suppliers": _industrial_form_text("critical_suppliers"),
+                    "material_issues": _industrial_form_text("material_issues"),
+                },
+            },
+            "data": {
+                "data_sources": _industrial_form_list("data_sources"),
+                "data_period": _industrial_form_text("data_period"),
+                "data_frequency": _industrial_form_text("data_frequency"),
+                "data_identifiers": _industrial_form_text("data_identifiers"),
+                "data_timestamps": _industrial_form_text("data_timestamps"),
+                "data_quality_issues": _industrial_form_list("data_quality_issues"),
+            },
+            "systems_integrations": {
+                "erp_status": _industrial_form_text("erp_status"),
+                "mes_status": _industrial_form_text("mes_status"),
+                "scada_status": _industrial_form_text("scada_status"),
+                "wms_status": _industrial_form_text("wms_status"),
+                "excel_export_status": _industrial_form_text("excel_export_status"),
+                "api_status": _industrial_form_text("api_status"),
+                "critical_integrations": _industrial_form_text("critical_integrations"),
+                "deferred_integrations": _industrial_form_text("deferred_integrations"),
+            },
+            "security": {
+                "sensitive_data": _industrial_form_list("sensitive_data"),
+                "nda_status": _industrial_form_text("nda_status"),
+                "cloud_allowed": _industrial_form_text("cloud_allowed"),
+                "data_transfer_allowed": _industrial_form_text("data_transfer_allowed"),
+                "preferred_processing": _industrial_form_text("preferred_processing"),
+                "anonymization_requirements": _industrial_form_text("anonymization_requirements"),
+                "security_notes": _industrial_form_text("security_notes"),
+            },
+            "economics": {
+                "loss_areas": _industrial_form_list("loss_areas"),
+                "downtime_events_per_month": _industrial_form_text("downtime_events_per_month"),
+                "defect_rate": _industrial_form_text("defect_rate"),
+                "defect_cost_per_month": _industrial_form_text("defect_cost_per_month"),
+                "inventory_value": _industrial_form_text("inventory_value"),
+                "manual_labor_hours": _industrial_form_text("manual_labor_hours"),
+                "monthly_loss_estimate": _industrial_form_text("monthly_loss_estimate"),
+                "meaningful_effect": _industrial_form_text("meaningful_effect"),
+            },
+            "mvp": {
+                "mvp_case": _industrial_form_text("mvp_case"),
+                "mvp_reason": _industrial_form_text("mvp_reason"),
+                "mvp_unit": _industrial_form_text("mvp_unit"),
+                "mvp_data_period": _industrial_form_text("mvp_data_period"),
+                "mvp_test_period": _industrial_form_text("mvp_test_period"),
+                "human_control": _industrial_form_text("human_control"),
+                "mvp_exclusions": _industrial_form_text("mvp_exclusions"),
+                "mvp_success_criteria": _industrial_form_text("mvp_success_criteria"),
+                "mvp_go_criterion": _industrial_form_text("mvp_go_criterion"),
+                "mvp_no_go_criterion": _industrial_form_text("mvp_no_go_criterion"),
+            },
+            "additional_comments": _industrial_form_text("additional_comments"),
+        },
+    }
+
+
+@diagnostic_bp.route("/industrial-ai/<token>", methods=["GET", "POST"])
+def industrial_ai_brief(token: str):
+    diagnostic_run = get_diagnostic_run_by_token(token)
+
+    if diagnostic_run is None:
+        return render_template(
+            "consulting/diagnostic_input_pack_invalid.html",
+            site_links=get_site_links(),
+        ), 404
+
+    if request.method == "POST":
+        payload = _build_industrial_ai_brief_payload()
+
+        # Жёсткая защита, чтобы Industrial AI Brief не сохранился как обычный input pack
+        payload["brief_type"] = "industrial_ai"
+        payload["brief_version"] = payload.get("brief_version") or "v1"
+        payload["source"] = payload.get("source") or "web_form"
+
+        saved_input_pack = save_client_input_pack(
+            diagnostic_run_id=diagnostic_run["id"],
+            payload=payload,
+        )
+
+        input_pack_id = _extract_input_pack_id(saved_input_pack)
+
+        uploaded_files = request.files.getlist("attachments")
+        _save_uploaded_files(
+            files=uploaded_files,
+            diagnostic_run_id=diagnostic_run["id"],
+            input_pack_id=input_pack_id,
+        )
+
+        return redirect(
+            url_for("diagnostic.industrial_ai_brief_submitted", token=token)
+        )
+
+    return render_template(
+        "consulting/industrial_ai_brief.html",
+        site_links=get_site_links(),
+        diagnostic_run=diagnostic_run,
+        diagnostic=diagnostic_run,
+        token=token,
+        download_docx_url=url_for(
+            "diagnostic.download_industrial_ai_brief_template",
+            token=token,
+            file_format="docx",
+        ),
+        download_pdf_url=url_for(
+            "diagnostic.download_industrial_ai_brief_template",
+            token=token,
+            file_format="pdf",
+        ),
+    )
+
+
+@diagnostic_bp.route("/industrial-ai/<token>/download/<file_format>")
+def download_industrial_ai_brief_template(token: str, file_format: str):
+    diagnostic_run = get_diagnostic_run_by_token(token)
+
+    if diagnostic_run is None:
+        abort(404)
+
+    file_format = file_format.lower().strip()
+
+    if file_format not in {"docx", "pdf"}:
+        abort(404)
+
+    output_path = _make_temp_output_path(f".{file_format}")
+
+    try:
+        if file_format == "docx":
+            builder = globals().get("_build_industrial_ai_blank_docx")
+            download_name = "AIha_Industrial_AI_Brief_Form_v1.docx"
+            mimetype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        else:
+            builder = globals().get("_build_industrial_ai_blank_pdf")
+            download_name = "AIha_Industrial_AI_Brief_Form_v1.pdf"
+            mimetype = "application/pdf"
+
+        if builder is None:
+            output_path.unlink(missing_ok=True)
+            return (
+                "Генератор файла для Industrial AI Brief ещё не подключён. "
+                "Добавьте функции _build_industrial_ai_blank_docx / "
+                "_build_industrial_ai_blank_pdf.",
+                501,
+            )
+
+        builder(output_path=output_path, diagnostic_run=diagnostic_run)
+
+    except RuntimeError as exc:
+        output_path.unlink(missing_ok=True)
+        return str(exc), 500
+
+    response = send_file(
+        output_path,
+        as_attachment=True,
+        download_name=download_name,
+        mimetype=mimetype,
+    )
+    response.call_on_close(lambda: output_path.unlink(missing_ok=True))
+    return response
+
+
+@diagnostic_bp.route("/industrial-ai/<token>/submitted")
+def industrial_ai_brief_submitted(token: str):
+    diagnostic_run = get_diagnostic_run_by_token(token)
+
+    if diagnostic_run is None:
+        abort(404)
+
+    return render_template(
+        "consulting/industrial_ai_brief_submitted.html",
+        site_links=get_site_links(),
+        diagnostic_run=diagnostic_run,
+        diagnostic=diagnostic_run,
+        token=token,
+        input_url=url_for("diagnostic.industrial_ai_brief", token=token),
+        download_docx_url=url_for(
+            "diagnostic.download_submitted_industrial_ai_brief",
+            token=token,
+            file_format="docx",
+        ),
+        download_pdf_url=url_for(
+            "diagnostic.download_submitted_industrial_ai_brief",
+            token=token,
+            file_format="pdf",
+        ),
+    )
+
+
+@diagnostic_bp.route("/industrial-ai/<token>/submitted/download/<file_format>")
+def download_submitted_industrial_ai_brief(token: str, file_format: str):
+    diagnostic_run = get_diagnostic_run_by_token(token)
+
+    if diagnostic_run is None:
+        abort(404)
+
+    file_format = file_format.lower().strip()
+
+    if file_format not in {"docx", "pdf"}:
+        abort(404)
+
+    input_pack = get_latest_input_pack(diagnostic_run["id"])
+
+    if input_pack is None:
+        return "Заполненный Industrial AI Brief не найден", 404
+
+    payload = _load_raw_payload(input_pack)
+
+    if payload.get("brief_type") != "industrial_ai":
+        return "Заполненный Industrial AI Brief не найден", 404
+
+    output_path = _make_temp_output_path(f".{file_format}")
+
+    try:
+        if file_format == "docx":
+            builder = globals().get("_build_submitted_industrial_ai_docx")
+            download_name = f"AIha_Industrial_AI_Brief_Submitted_{diagnostic_run['id']}.docx"
+            mimetype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        else:
+            builder = globals().get("_build_submitted_industrial_ai_pdf")
+            download_name = f"AIha_Industrial_AI_Brief_Submitted_{diagnostic_run['id']}.pdf"
+            mimetype = "application/pdf"
+
+        if builder is None:
+            output_path.unlink(missing_ok=True)
+            return (
+                "Генератор заполненного файла для Industrial AI Brief ещё не подключён. "
+                "Добавьте функции _build_submitted_industrial_ai_docx / "
+                "_build_submitted_industrial_ai_pdf.",
+                501,
+            )
+
+        builder(
+            output_path=output_path,
+            diagnostic_run=diagnostic_run,
+            payload=payload,
+        )
+
+    except RuntimeError as exc:
+        output_path.unlink(missing_ok=True)
+        return str(exc), 500
+
+    response = send_file(
+        output_path,
+        as_attachment=True,
+        download_name=download_name,
+        mimetype=mimetype,
+    )
+    response.call_on_close(lambda: output_path.unlink(missing_ok=True))
+    return response

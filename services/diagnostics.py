@@ -235,7 +235,18 @@ def save_client_input_pack(
     diagnostic_run_id: int,
     payload: dict[str, Any],
 ) -> int:
+    if not isinstance(payload, dict):
+        raise ValueError("payload must be a dict")
+
     now = _now_iso()
+
+    payload_to_save = dict(payload)
+    payload_to_save.setdefault("brief_type", "diagnostic_input_pack")
+    payload_to_save.setdefault("brief_version", "v1")
+    payload_to_save.setdefault("source", "web_form")
+    payload_to_save.setdefault("submitted_at", now)
+
+    raw_payload = json.dumps(payload_to_save, ensure_ascii=False)
 
     with get_db_connection() as conn:
         conn.execute(
@@ -252,7 +263,7 @@ def save_client_input_pack(
             (
                 diagnostic_run_id,
                 DIAGNOSTIC_STATUS_INPUT_RECEIVED,
-                json.dumps(payload, ensure_ascii=False),
+                raw_payload,
                 now,
                 now,
             ),
