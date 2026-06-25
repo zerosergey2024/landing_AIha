@@ -398,6 +398,60 @@ def admin_leads():
         ],
     )
 
+def _diagnostic_value(diagnostic_run, key: str, default=None):
+    if diagnostic_run is None:
+        return default
+
+    if isinstance(diagnostic_run, dict):
+        return diagnostic_run.get(key, default)
+
+    if hasattr(diagnostic_run, "keys") and key in diagnostic_run.keys():
+        return diagnostic_run[key]
+
+    return getattr(diagnostic_run, key, default)
+
+
+def _get_latest_diagnostic_run(diagnostic_runs):
+    if not diagnostic_runs:
+        return None
+
+    return max(
+        diagnostic_runs,
+        key=lambda run: _diagnostic_value(run, "id", 0) or 0,
+    )
+
+
+def _build_diagnostic_brief_links(diagnostic_run):
+    input_pack_url = _diagnostic_value(diagnostic_run, "input_pack_url")
+
+    input_pack_token = (
+        _diagnostic_value(diagnostic_run, "input_pack_token")
+        or _diagnostic_value(diagnostic_run, "token")
+    )
+
+    if not input_pack_token and input_pack_url:
+        input_pack_token = input_pack_url.rstrip("/").split("/")[-1]
+
+    if not input_pack_url and input_pack_token:
+        input_pack_url = url_for(
+            "diagnostic.input_pack",
+            token=input_pack_token,
+            _external=True,
+        )
+
+    industrial_ai_brief_url = None
+    if input_pack_token:
+        industrial_ai_brief_url = url_for(
+            "diagnostic.industrial_ai_brief",
+            token=input_pack_token,
+            _external=True,
+        )
+
+    return {
+        "input_pack_url": input_pack_url,
+        "industrial_ai_brief_url": industrial_ai_brief_url,
+    }
+
 @admin_bp.get("/leads/<int:lead_id>")
 def admin_lead_detail(lead_id: int):
     if not admin_required():
@@ -409,11 +463,18 @@ def admin_lead_detail(lead_id: int):
         return "Заявка не найдена", 404
 
     diagnostic_runs = get_diagnostic_runs_for_lead(lead_id)
+    latest_diagnostic_run = _get_latest_diagnostic_run(diagnostic_runs)
 
     has_completed_t004 = any(
         task["task_code"] == "T-004" and task["status"] == "Done"
         for task in tasks
     )
+
+    diagnostic_brief_links = None
+    if latest_diagnostic_run is not None:
+        diagnostic_brief_links = _build_diagnostic_brief_links(
+            latest_diagnostic_run
+        )
 
     return render_template(
         "admin_lead_detail.html",
@@ -421,10 +482,40 @@ def admin_lead_detail(lead_id: int):
         constraints=constraints,
         tasks=tasks,
         diagnostic_runs=diagnostic_runs,
+        latest_diagnostic_run=latest_diagnostic_run,
+        diagnostic_brief_links=diagnostic_brief_links,
         has_completed_t004=has_completed_t004,
         statuses=LEAD_STATUSES,
         ai_run_allowed_stages=AI_RUN_ALLOWED_STAGES,
     )
+
+def _build_diagnostic_brief_links(diagnostic_run):
+    input_pack_url = diagnostic_run.get("input_pack_url")
+
+    input_pack_token = (
+        diagnostic_run.get("input_pack_token")
+        or diagnostic_run.get("token")
+    )
+
+    if not input_pack_token and input_pack_url:
+        input_pack_token = input_pack_url.rstrip("/").split("/")[-1]
+
+    if not input_pack_url and input_pack_token:
+        input_pack_url = url_for(
+            "diagnostic.input_pack",
+            token=input_pack_token,
+            _external=True,
+        )
+
+    industrial_ai_brief_url = None
+    if input_pack_token:
+        industrial_ai_brief_url = url_for(
+            "diagnostic.industrial_ai_brief",
+            token=input_pack_token,
+            _external=True,
+        )
+
+    return input_pack_url, industrial_ai_brief_url
 
 @admin_bp.post("/leads/<int:lead_id>/create-diagnostic")
 def create_diagnostic_for_lead(lead_id: int):
@@ -434,8 +525,14 @@ def create_diagnostic_for_lead(lead_id: int):
     existing_diagnostic = get_latest_diagnostic_run_for_lead(lead_id)
 
     if existing_diagnostic is not None:
+        input_pack_url, industrial_ai_brief_url = _build_diagnostic_brief_links(
+            existing_diagnostic
+        )
+
         flash(
-            "Экспресс-диагностика для этого лида уже создана.",
+            "Экспресс-диагностика для этого лида уже создана. "
+            f"Diagnostic Input Pack: {input_pack_url} | "
+            f"Industrial AI Brief: {industrial_ai_brief_url}",
             "info",
         )
         return redirect(url_for("admin.admin_lead_detail", lead_id=lead_id))
@@ -446,8 +543,14 @@ def create_diagnostic_for_lead(lead_id: int):
         flash(f"Ошибка создания экспресс-диагностики: {exc}", "error")
         return redirect(url_for("admin.admin_lead_detail", lead_id=lead_id))
 
+    input_pack_url, industrial_ai_brief_url = _build_diagnostic_brief_links(
+        diagnostic_run
+    )
+
     flash(
-        f"Экспресс-диагностика создана. Ссылка: {diagnostic_run['input_pack_url']}",
+        "Экспресс-диагностика создана. "
+        f"Diagnostic Input Pack: {input_pack_url} | "
+        f"Industrial AI Brief: {industrial_ai_brief_url}",
         "success",
     )
 

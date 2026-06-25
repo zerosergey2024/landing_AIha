@@ -435,7 +435,7 @@
         {% endif %}
     {% endwith %}
 
-    <div class="top-links">
+   <div class="top-links">
         <a href="/admin/leads/{{ lead.id }}/intake-input">
             Открыть input block первой задачи
         </a>
@@ -458,6 +458,7 @@
             {% endif %}
         {% endif %}
     </div>
+
 
     <div class="card">
         <h2>Контакт</h2>
@@ -670,12 +671,42 @@
                         <span class="task-status">{{ diagnostic.status or "не указано" }}</span>
                     </div>
 
+                    {% set industrial_ai_brief_url = diagnostic.input_pack_url | replace('/consulting/diagnostic/input-pack/', '/consulting/diagnostic/industrial-ai/') %}
+
+                    <div class="field" style="margin-top: 14px;">
+                        <strong>Ссылки для клиента</strong>
+
                     <p>
-                        <strong>Ссылка для клиента:</strong><br>
-                        <a href="{{ diagnostic.input_pack_url }}" target="_blank">
-                            {{ diagnostic.input_pack_url }}
+                            <strong>Diagnostic Input Pack Form</strong><br>
+                            Для заявок, сервисных, административных, back-office и операционных процессов:
+                            заявки, обращения, документы, сделки, заказы, SLA, CRM, 1C, Telegram, Email.
+                    </p>
+
+                    <p>
+                            <a href="{{ diagnostic.input_pack_url }}" target="_blank" rel="noopener">
+                               Открыть Diagnostic Input Pack
+                            </a>
+                    </p>
+
+                     <p class="task-meta">
+                       {{ diagnostic.input_pack_url }}
+                     </p>
+
+                    <p style="margin-top: 16px;">
+                        <strong>Industrial AI Brief Form</strong><br>
+                          Для производственных AI-кейсов: оборудование, линии, участки, простои,
+                          отказы, ремонты, брак, качество, запасы, MES/SCADA/ERP, OEE.
+                    </p>
+                    <p>
+                        <a href="{{ industrial_ai_brief_url }}" target="_blank" rel="noopener">
+                           Открыть Industrial AI Brief
                         </a>
                     </p>
+
+                    <p class="task-meta">
+                      {{ industrial_ai_brief_url }}
+                    </p>
+                </div>
 
                     <p><strong>Создано:</strong> {{ diagnostic.created_at or "не указано" }}</p>
                     <p><strong>Обновлено:</strong> {{ diagnostic.updated_at or "не указано" }}</p>
@@ -848,7 +879,7 @@
             {% endfor %}
         </div>
     </section>
-{% else %}
+{% else %}         до сюда
     <section class="tasks-block">
         <h2>Экспресс-диагностика</h2>
 
@@ -1033,6 +1064,6 @@
         });
     });
 </script>
-
+</div>
 </body>
 </html>
