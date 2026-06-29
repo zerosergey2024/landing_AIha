@@ -1393,13 +1393,28 @@ INDUSTRIAL_AI_BRIEF_SECTIONS = [
         ],
     ),
     (
-        "10. Дополнительно",
+        "10. Файлы и материалы",
+        [
+            ("Выгрузки ERP / 1C / MES / SCADA", "attachments.erp_1c_mes_scada_exports"),
+            ("Журналы ремонтов", "attachments.repair_logs"),
+            ("Журналы простоев", "attachments.downtime_logs"),
+            ("Данные по браку / качеству", "attachments.quality_defect_data"),
+            ("План-факт производства", "attachments.production_plan_fact"),
+            ("Данные по поставкам / материалам", "attachments.supply_material_data"),
+            ("Скриншоты систем", "attachments.system_screenshots"),
+            ("Описание процесса", "attachments.process_description"),
+            ("Регламенты / инструкции", "attachments.regulations_instructions"),
+            ("Заполненный DOCX/PDF бланк", "attachments.filled_docx_pdf"),
+            ("Дополнительные материалы", "attachments.additional_materials"),
+        ],
+    ),
+    (
+        "11. Дополнительно",
         [
             ("Дополнительные комментарии", "additional_comments"),
         ],
     ),
 ]
-
 
 def _industrial_ai_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
