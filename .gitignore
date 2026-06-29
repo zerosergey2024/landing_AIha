@@ -13,3 +13,7 @@ backups/
 .DS_Store
 .idea/
 .vscode/
+# Local backups and generated diagnostic files
+_backups/
+uploads/*
+!uploads/.gitkeep
