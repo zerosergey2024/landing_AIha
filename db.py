@@ -188,6 +188,10 @@ def init_db() -> None:
                 generated_pdf_path TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
+                brief_type TEXT NOT NULL DEFAULT 'diagnostic_input_pack',
+                source TEXT NOT NULL DEFAULT 'web_form',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                superseded_at TEXT,
                 FOREIGN KEY (diagnostic_run_id) REFERENCES diagnostic_runs(id)
             )
             """
@@ -201,6 +205,10 @@ def init_db() -> None:
                 "normalized_payload": "TEXT",
                 "generated_docx_path": "TEXT",
                 "generated_pdf_path": "TEXT",
+                "brief_type": "TEXT NOT NULL DEFAULT 'diagnostic_input_pack'",
+                "source": "TEXT NOT NULL DEFAULT 'web_form'",
+                "is_active": "INTEGER NOT NULL DEFAULT 1",
+                "superseded_at": "TEXT",
             },
         )
 
@@ -239,6 +247,21 @@ def init_db() -> None:
             """
             CREATE INDEX IF NOT EXISTS idx_diagnostic_runs_lead_id
             ON diagnostic_runs(lead_id)
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_diagnostic_input_packs_run_brief
+            ON diagnostic_input_packs(diagnostic_run_id, brief_type, id)
+            """
+        )
+
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_diagnostic_input_packs_active_run_brief
+            ON diagnostic_input_packs(diagnostic_run_id, brief_type)
+            WHERE is_active = 1
             """
         )
 
