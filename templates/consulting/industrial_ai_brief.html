@@ -309,10 +309,10 @@
       .btn {
         width: 100%;
       }
+
     }
   </style>
 </head>
-
 <body>
   <main class="page">
     <section class="hero">
@@ -937,28 +937,86 @@
       </section>
 
       <section class="section">
-        <h2>9. Файлы и материалы</h2>
-        <p class="section-description">
-          Приложите выгрузки, журналы, скриншоты, описания процесса или заполненный DOCX/PDF.
-        </p>
+  <h2>9. Файлы и материалы</h2>
+  <p class="section-description">
+    Приложите выгрузки, журналы, скриншоты, описания процесса или заполненный DOCX/PDF.
+  </p>
 
-        <div class="upload-box">
-          <div class="field">
-            <label for="attachments">Файлы</label>
-            <input id="attachments" name="attachments" type="file" multiple />
-            <div class="hint">
-              Подходят: XLSX, CSV, PDF, DOCX, TXT, PNG, JPG. Например: выгрузки ERP/1C/MES/SCADA,
-              журналы ремонтов, простои, брак, план-факт, поставки, скриншоты систем.
-            </div>
-          </div>
+  {% set attachments_list = existing_attachments | default([], true) %}
+
+  {% if attachments_list %}
+    <div class="upload-box" style="margin-bottom: 18px;">
+      <div class="field">
+        <label>Уже загруженные материалы</label>
+
+        <div class="hint" style="margin-bottom: 12px;">
+          Эти файлы уже привязаны к текущему Industrial AI Brief.
+          Поле выбора файла ниже не заполняется автоматически по ограничениям браузера.
+          Чтобы добавить новые материалы, выберите их ниже и сохраните форму.
         </div>
 
-        <div class="field" style="margin-top: 16px;">
-          <label for="additional_comments">Дополнительные комментарии</label>
-          <textarea id="additional_comments" name="additional_comments"></textarea>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #d0d7de;">
+                  Файл
+                </th>
+                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #d0d7de;">
+                  Тип
+                </th>
+                <th style="text-align: left; padding: 10px; border-bottom: 1px solid #d0d7de;">
+                  Дата загрузки
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for attachment in attachments_list %}
+                <tr>
+                  <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+                    {{ attachment.original_filename or "—" }}
+                  </td>
+                  <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+                    {{ attachment.file_type or "—" }}
+                  </td>
+                  <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+                    {{ attachment.uploaded_at or "—" }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-      </section>
+      </div>
+    </div>
+  {% else %}
+    <div class="upload-box" style="margin-bottom: 18px;">
+      <div class="field">
+        <label>Уже загруженные материалы</label>
+        <div class="hint">
+          Пока к этому Industrial AI Brief не привязаны файлы.
+        </div>
+      </div>
+    </div>
+  {% endif %}
 
+  <div class="upload-box">
+    <div class="field">
+      <label for="attachments">Добавить новые файлы</label>
+      <input id="attachments" name="attachments" type="file" multiple />
+      <div class="hint">
+        Подходят: XLSX, CSV, PDF, DOCX, TXT, PNG, JPG. Например: выгрузки ERP/1C/MES/SCADA,
+        журналы ремонтов, простои, брак, план-факт, поставки, скриншоты систем.
+        Новые файлы будут добавлены к уже загруженным материалам.
+      </div>
+    </div>
+  </div>
+
+  <div class="field" style="margin-top: 16px;">
+    <label for="additional_comments">Дополнительные комментарии</label>
+    <textarea id="additional_comments" name="additional_comments"></textarea>
+  </div>
+</section>
       <section class="submit-panel">
         <p>
           После отправки brief будет использован для D-001 Diagnostic Assessment и дальнейшего
@@ -969,5 +1027,79 @@
       </section>
     </form>
   </main>
+  <script>
+    window.aihaIndustrialBriefFormData = {{ form_data | default({}, true) | tojson | safe }};
+
+    function flattenPayload(value, result = {}) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return result;
+      }
+
+      Object.keys(value).forEach(function (key) {
+        const item = value[key];
+
+        if (
+          item &&
+          typeof item === "object" &&
+          !Array.isArray(item)
+        ) {
+          flattenPayload(item, result);
+          return;
+        }
+
+        result[key] = item;
+      });
+
+      return result;
+    }
+
+    function applyIndustrialBriefFormData() {
+      const rawData = window.aihaIndustrialBriefFormData || {};
+      const flatData = flattenPayload(rawData);
+
+      Object.keys(flatData).forEach(function (name) {
+        const value = flatData[name];
+        const fields = document.querySelectorAll('[name="' + CSS.escape(name) + '"]');
+
+        if (!fields || fields.length === 0) {
+          return;
+        }
+
+        fields.forEach(function (field) {
+          const tagName = field.tagName.toLowerCase();
+          const type = (field.getAttribute("type") || "").toLowerCase();
+
+          if (type === "file") {
+            return;
+          }
+
+          if (type === "checkbox") {
+            if (Array.isArray(value)) {
+              field.checked = value.includes(field.value);
+            } else {
+              field.checked = Boolean(value);
+            }
+            return;
+          }
+
+          if (type === "radio") {
+            field.checked = String(field.value) === String(value || "");
+            return;
+          }
+
+          if (tagName === "select") {
+            field.value = value || "";
+            return;
+          }
+
+          if (tagName === "textarea" || type === "text" || type === "hidden" || type === "") {
+            field.value = value || "";
+          }
+        });
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", applyIndustrialBriefFormData);
+  </script>
 </body>
 </html>
