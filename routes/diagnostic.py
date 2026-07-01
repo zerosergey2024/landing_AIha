@@ -1019,6 +1019,7 @@ def input_pack(token: str):
     if request.method == "POST":
         payload = _build_input_pack_payload()
 
+        # Жёсткая защита, чтобы базовый AI Audit Brief не сохранился как другой тип brief
         payload["brief_type"] = "diagnostic_input_pack"
         payload["source"] = payload.get("source") or "web_form"
 
@@ -1032,7 +1033,6 @@ def input_pack(token: str):
         input_pack_id = _extract_input_pack_id(saved_input_pack)
 
         uploaded_files = request.files.getlist("attachments")
-
         _save_uploaded_files(
             files=uploaded_files,
             diagnostic_run_id=diagnostic_run["id"],
@@ -1040,17 +1040,21 @@ def input_pack(token: str):
         )
 
         return redirect(
-            url_for(
-                "diagnostic.input_pack_submitted",
-                token=token,
-            )
+            url_for("diagnostic.input_pack_submitted", token=token)
         )
 
     active_input_pack = get_active_input_pack(
         diagnostic_run_id=diagnostic_run["id"],
         brief_type="diagnostic_input_pack",
     )
+
     form_data = _load_raw_payload(active_input_pack)
+
+    existing_attachments = []
+    if active_input_pack is not None:
+        existing_attachments = get_input_pack_attachments(
+            int(active_input_pack["id"])
+        )
 
     return render_template(
         "consulting/diagnostic_input_pack.html",
@@ -1061,6 +1065,7 @@ def input_pack(token: str):
         form_data=form_data,
         edit_mode=active_input_pack is not None,
         input_pack_id=active_input_pack["id"] if active_input_pack else None,
+        existing_attachments=existing_attachments,
         download_docx_url=url_for(
             "diagnostic.download_input_pack_template",
             token=token,
