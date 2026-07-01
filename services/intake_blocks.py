@@ -352,7 +352,7 @@ def _get_latest_diagnostic_run_for_lead(lead_id: int) -> sqlite3.Row | None:
         ).fetchone()
 
 
-def _get_active_diagnostic_input_pack_for_t001(
+def _get_active_diagnostic_input_pack_for_t_workflow(
     *,
     lead: sqlite3.Row,
     task: sqlite3.Row,
@@ -571,6 +571,74 @@ Expected output:
 Запрещено добавлять альтернативные процессы, отрасли или сценарии, которых нет в анкете клиента.
 """.strip()
 
+def _build_diagnostic_input_pack_context_for_t_workflow(
+    *,
+    lead: sqlite3.Row,
+    task: sqlite3.Row,
+) -> str:
+    input_pack = _get_active_diagnostic_input_pack_for_t_workflow(
+        lead=lead,
+        task=task,
+    )
+
+    if input_pack is None:
+        return ""
+
+    payload = _load_json_object(input_pack["raw_payload"])
+    summary = _build_diagnostic_input_pack_summary(payload)
+    attachments = _get_attachments_for_input_pack(int(input_pack["id"]))
+
+    return f"""
+0. Active Diagnostic Input Pack Context
+
+Diagnostic_Run_ID: {value(input_pack, "diagnostic_run_id")}
+Input_Pack_ID: {value(input_pack, "id")}
+Источник: diagnostic_input_pack
+Источник_raw_payload: {payload.get("source") or value(input_pack, "source")}
+
+Правило источников для T-цепочки:
+Для T-001, T-002, T-003 и T-004 основным источником является active Diagnostic Input Pack.
+Не используй Industrial AI Brief как основной источник для T-цепочки.
+Industrial AI Brief относится к D-001–D-004 и не должен подменять базовый AI Audit Brief.
+Если нижний блок после разделителя содержит старый lead-form context, legacy audit form source, industrial AI references или другой Input_Pack_ID, используй его только как исторический/вспомогательный контекст.
+При конфликте всегда побеждает Active Diagnostic Input Pack Context выше.
+
+Diagnostic Input Pack Summary:
+
+{json.dumps(summary, ensure_ascii=False, indent=2)}
+
+Raw Diagnostic Input Pack:
+
+{json.dumps(payload, ensure_ascii=False, indent=2)}
+
+Attachments linked to Diagnostic Input Pack:
+
+{json.dumps(attachments, ensure_ascii=False, indent=2)}
+""".strip()
+
+def _sanitize_legacy_t_context(task_context: str) -> str:
+    if not task_context:
+        return ""
+
+    replacements = {
+        "Источник: aiha_consulting_audit_form": (
+            "Источник_legacy_lead_form: legacy_consulting_audit_form "
+            "(fallback context only; do not use as primary source)"
+        ),
+        "aiha_consulting_audit_form": "legacy_consulting_audit_form",
+        "Канал_заявки: Форма AI-аудита": (
+            "Канал_legacy_lead_form: Форма AI-аудита "
+            "(fallback context only)"
+        ),
+    }
+
+    sanitized = task_context
+
+    for old, new in replacements.items():
+        sanitized = sanitized.replace(old, new)
+
+    return sanitized
+
 
 def build_task_input_block(
     *,
@@ -591,7 +659,7 @@ def build_task_input_block(
     stage = value(task, "stage")
 
     if stage == "Intake Completeness":
-        input_pack = _get_active_diagnostic_input_pack_for_t001(
+        input_pack = _get_active_diagnostic_input_pack_for_t_workflow(
             lead=lead,
             task=task,
         )
@@ -611,32 +679,76 @@ def build_task_input_block(
         )
 
     if stage == "Risk Assessment":
-        return build_risk_assessment_input_block(
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        task_context = build_risk_assessment_input_block(
             lead=lead,
             constraints=constraints,
             task=task,
         )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
 
     if stage == "Economics Assessment":
-        return build_economics_assessment_input_block(
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        task_context = build_economics_assessment_input_block(
             lead=lead,
             constraints=constraints,
             task=task,
         )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
 
     if stage == "Final Output":
-        return build_final_output_input_block(
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
             lead=lead,
-            constraints=constraints,
             task=task,
         )
 
-    if stage == "Client Delivery":
-        return build_client_delivery_input_block(
+        task_context = build_final_output_input_block(
             lead=lead,
             constraints=constraints,
             task=task,
         )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
+
+    if stage == "Client Delivery":
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        task_context = build_client_delivery_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
 
     raise ValueError(f"Unknown active workflow stage: {stage}")
 
