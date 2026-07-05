@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,103 @@ from services.diagnostics import (
 
 D001_AGENT_PROMPT_NAME = "diagnostic_assessment"
 MIN_INDUSTRIAL_FILLED_FIELDS = 20
+
+MAX_ATTACHMENT_SIZE_MB = 50
+MAX_TOTAL_ATTACHMENTS_SIZE_MB = 200
+MAX_ATTACHMENTS_PER_BRIEF = 10
+
+MAX_TABLE_PREVIEW_ROWS = 20
+MAX_TABLE_PREVIEW_COLUMNS = 60
+MAX_WORKSHEET_PREVIEW_COUNT = 5
+
+MAX_DOCUMENT_TEXT_CHARS = 30_000
+MAX_PDF_PREVIEW_PAGES = 8
+
+MAX_SINGLE_ATTACHMENT_PROMPT_CHARS = 25_000
+MAX_TOTAL_ATTACHMENT_PROMPT_CHARS = 80_000
+
+SUPPORTED_ATTACHMENT_PREVIEW_SUFFIXES = {
+    ".xlsx",
+    ".xlsm",
+    ".xls",
+    ".csv",
+    ".docx",
+    ".pdf",
+}
+
+BYTES_IN_MB = 1024 * 1024
+MAX_ATTACHMENT_SIZE_BYTES = MAX_ATTACHMENT_SIZE_MB * BYTES_IN_MB
+MAX_TOTAL_ATTACHMENTS_SIZE_BYTES = MAX_TOTAL_ATTACHMENTS_SIZE_MB * BYTES_IN_MB
+
+
+def _safe_string(value: Any, max_len: int = 240) -> str:
+    if value is None:
+        return ""
+
+    text = str(value).strip()
+
+    if len(text) > max_len:
+        return text[:max_len] + "..."
+
+    return text
+
+
+def _truncate_text(value: Any, max_chars: int) -> tuple[str, bool, int]:
+    text = str(value or "")
+    original_length = len(text)
+
+    if original_length <= max_chars:
+        return text, False, original_length
+
+    return (
+        text[:max_chars]
+        + "\n\n[TRUNCATED: attachment preview limited to "
+        + str(max_chars)
+        + " characters for consulting-grade diagnostic review]",
+        True,
+        original_length,
+    )
+
+
+def _limit_text(value: Any, max_chars: int) -> str:
+    limited_text, _, _ = _truncate_text(value, max_chars)
+    return limited_text
+
+
+def _bytes_to_mb(size_bytes: int | None) -> float | None:
+    if size_bytes is None:
+        return None
+
+    return round(size_bytes / BYTES_IN_MB, 3)
+
+
+def _build_attachment_limits_summary() -> dict[str, Any]:
+    return {
+        "mode": "limited_consulting_grade_review",
+        "stored_file": "full_file_is_stored",
+        "prompt_usage": "compact_preview_and_evidence_summary_only",
+        "upload_limits": {
+            "max_attachment_size_mb": MAX_ATTACHMENT_SIZE_MB,
+            "max_total_attachments_size_mb": MAX_TOTAL_ATTACHMENTS_SIZE_MB,
+            "max_attachments_per_brief": MAX_ATTACHMENTS_PER_BRIEF,
+        },
+        "read_limits": {
+            "max_table_preview_rows": MAX_TABLE_PREVIEW_ROWS,
+            "max_table_preview_columns": MAX_TABLE_PREVIEW_COLUMNS,
+            "max_worksheet_preview_count": MAX_WORKSHEET_PREVIEW_COUNT,
+            "max_document_text_chars": MAX_DOCUMENT_TEXT_CHARS,
+            "max_pdf_preview_pages": MAX_PDF_PREVIEW_PAGES,
+            "max_single_attachment_prompt_chars": MAX_SINGLE_ATTACHMENT_PROMPT_CHARS,
+            "max_total_attachment_prompt_chars": MAX_TOTAL_ATTACHMENT_PROMPT_CHARS,
+        },
+        "not_in_scope": [
+            "full BI analytics",
+            "deep sensor analytics",
+            "production model training",
+            "final ROI calculation without baseline",
+            "legal or audit-grade conclusions",
+        ],
+    }
 
 
 def _load_json_object(value: str | None, label: str) -> dict[str, Any]:
@@ -194,19 +292,125 @@ def validate_d001_input(diagnostic_run_id: int) -> None:
         raw_payload=raw_payload,
     )
 
-def _safe_string(value: Any, max_len: int = 240) -> str:
-    if value is None:
-        return ""
 
-    text = str(value).strip()
+def _resolve_existing_path(file_path: str | None) -> Path:
+    raw_path = str(file_path or "").strip()
 
-    if len(text) > max_len:
-        return text[:max_len] + "..."
+    if not raw_path:
+        return Path("")
 
-    return text
+    path = Path(raw_path)
+
+    if path.exists():
+        return path
+
+    candidates = [
+        Path.cwd() / raw_path,
+        Path.cwd() / raw_path.lstrip("/\\"),
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return path
 
 
-def _read_csv_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
+def _get_file_size_bytes(path: Path) -> int | None:
+    try:
+        if path.exists() and path.is_file():
+            return path.stat().st_size
+    except OSError:
+        return None
+
+    return None
+
+
+def _build_attachment_inventory(
+    attachments: list[dict[str, Any]],
+) -> dict[str, Any]:
+    files: list[dict[str, Any]] = []
+    total_size_bytes = 0
+    known_size_count = 0
+
+    for index, attachment in enumerate(attachments):
+        file_path = attachment.get("file_path") or ""
+        resolved_path = _resolve_existing_path(file_path)
+        exists = bool(file_path) and resolved_path.exists()
+        size_bytes = _get_file_size_bytes(resolved_path)
+
+        if size_bytes is not None:
+            known_size_count += 1
+            total_size_bytes += size_bytes
+
+        files.append(
+            {
+                "attachment_id": attachment.get("id"),
+                "original_filename": attachment.get("original_filename"),
+                "stored_filename": attachment.get("stored_filename"),
+                "file_type": attachment.get("file_type"),
+                "uploaded_at": attachment.get("uploaded_at"),
+                "file_path": file_path,
+                "exists": exists,
+                "size_bytes": size_bytes,
+                "size_mb": _bytes_to_mb(size_bytes),
+                "within_single_file_limit": (
+                    size_bytes is None or size_bytes <= MAX_ATTACHMENT_SIZE_BYTES
+                ),
+                "within_count_limit": index < MAX_ATTACHMENTS_PER_BRIEF,
+            }
+        )
+
+    limit_violations: list[str] = []
+
+    if len(attachments) > MAX_ATTACHMENTS_PER_BRIEF:
+        limit_violations.append("attachments_count_exceeds_limit")
+
+    if total_size_bytes > MAX_TOTAL_ATTACHMENTS_SIZE_BYTES:
+        limit_violations.append("known_total_attachment_size_exceeds_limit")
+
+    return {
+        "files_count": len(attachments),
+        "known_size_count": known_size_count,
+        "total_known_size_bytes": total_size_bytes,
+        "total_known_size_mb": _bytes_to_mb(total_size_bytes),
+        "limits": _build_attachment_limits_summary()["upload_limits"],
+        "limit_violations": limit_violations,
+        "files": files,
+    }
+
+
+def _make_attachment_item(
+    attachment: dict[str, Any],
+    resolved_path: Path,
+    suffix: str,
+) -> dict[str, Any]:
+    size_bytes = _get_file_size_bytes(resolved_path)
+
+    return {
+        "attachment_id": attachment.get("id"),
+        "input_pack_id": attachment.get("input_pack_id"),
+        "original_filename": attachment.get("original_filename") or "",
+        "stored_filename": attachment.get("stored_filename"),
+        "file_type": attachment.get("file_type"),
+        "uploaded_at": attachment.get("uploaded_at"),
+        "file_path": attachment.get("file_path") or "",
+        "resolved_file_path": str(resolved_path),
+        "suffix": suffix,
+        "exists": resolved_path.exists(),
+        "file_size_bytes": size_bytes,
+        "file_size_mb": _bytes_to_mb(size_bytes),
+        "preview": None,
+        "detected_signals": None,
+    }
+
+
+def _read_csv_preview(
+    file_path: str,
+    *,
+    max_rows: int = MAX_TABLE_PREVIEW_ROWS,
+    max_columns: int = MAX_TABLE_PREVIEW_COLUMNS,
+) -> dict[str, Any]:
     path = Path(file_path)
 
     result: dict[str, Any] = {
@@ -214,9 +418,17 @@ def _read_csv_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
         "file_path": str(path),
         "exists": path.exists(),
         "columns": [],
+        "columns_count": 0,
         "sample_rows": [],
+        "rows_count": 0,
         "row_count_previewed": 0,
         "encoding": None,
+        "limits_applied": {
+            "max_preview_rows": max_rows,
+            "max_preview_columns": max_columns,
+            "rows_truncated": False,
+            "columns_truncated": False,
+        },
         "error": None,
     }
 
@@ -230,25 +442,43 @@ def _read_csv_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
         try:
             with path.open("r", encoding=encoding, newline="") as file:
                 reader = csv.DictReader(file)
-
-                result["columns"] = [
+                all_columns = [
                     _safe_string(column)
                     for column in (reader.fieldnames or [])
+                    if column is not None
                 ]
 
-                for index, row in enumerate(reader):
-                    if index >= max_rows:
-                        break
+                selected_columns = all_columns[:max_columns]
+                sample_rows: list[dict[str, str]] = []
+                rows_count = 0
 
-                    result["sample_rows"].append(
-                        {
-                            _safe_string(key): _safe_string(value)
-                            for key, value in row.items()
-                        }
-                    )
+                for row in reader:
+                    rows_count += 1
 
-                result["row_count_previewed"] = len(result["sample_rows"])
+                    if len(sample_rows) >= max_rows:
+                        continue
+
+                    row_dict: dict[str, str] = {}
+
+                    for column in selected_columns:
+                        row_dict[column] = _safe_string(row.get(column))
+
+                    if any(value.strip() for value in row_dict.values()):
+                        sample_rows.append(row_dict)
+
+                result["columns"] = selected_columns
+                result["columns_count"] = len(all_columns)
+                result["sample_rows"] = sample_rows
+                result["rows_count"] = rows_count
+                result["row_count_previewed"] = len(sample_rows)
                 result["encoding"] = encoding
+                result["limits_applied"] = {
+                    "max_preview_rows": max_rows,
+                    "max_preview_columns": max_columns,
+                    "rows_truncated": rows_count > max_rows,
+                    "columns_truncated": len(all_columns) > max_columns,
+                }
+
                 return result
 
         except Exception as exc:
@@ -258,7 +488,12 @@ def _read_csv_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
     return result
 
 
-def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
+def _read_xlsx_preview(
+    file_path: str,
+    *,
+    max_rows: int = MAX_TABLE_PREVIEW_ROWS,
+    max_columns: int = MAX_TABLE_PREVIEW_COLUMNS,
+) -> dict[str, Any]:
     path = Path(file_path)
 
     result: dict[str, Any] = {
@@ -266,6 +501,13 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
         "file_path": str(path),
         "exists": path.exists(),
         "sheets": [],
+        "sheets_count": 0,
+        "limits_applied": {
+            "max_preview_rows": max_rows,
+            "max_preview_columns": max_columns,
+            "max_worksheet_preview_count": MAX_WORKSHEET_PREVIEW_COUNT,
+            "sheets_truncated": False,
+        },
         "error": None,
     }
 
@@ -283,11 +525,6 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
         return _safe_string(value, max_len=120).strip()
 
     def header_score(row_values: list[Any]) -> int:
-        """
-        Ищем наиболее похожую строку на заголовок таблицы.
-        Это нужно, потому что Excel-лист может начинаться с названия отчёта,
-        комментариев или пустых строк.
-        """
         cells = [
             normalize_cell(value).lower()
             for value in row_values
@@ -346,15 +583,15 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
             if len(cell) <= 40:
                 score += 1
 
-        # Много заполненных ячеек в строке — хороший признак строки заголовков.
         if len(cells) >= 5:
             score += 5
 
-        # Одна длинная ячейка похожа на заголовок отчёта, а не на header таблицы.
         if len(cells) == 1 and len(cells[0]) > 40:
             score -= 10
 
         return score
+
+    workbook = None
 
     try:
         workbook = load_workbook(
@@ -363,11 +600,29 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
             data_only=True,
         )
 
-        for worksheet in workbook.worksheets[:5]:
+        worksheets = workbook.worksheets
+        result["sheets_count"] = len(worksheets)
+        result["limits_applied"]["sheets_truncated"] = (
+            len(worksheets) > MAX_WORKSHEET_PREVIEW_COUNT
+        )
+
+        for worksheet in worksheets[:MAX_WORKSHEET_PREVIEW_COUNT]:
+            worksheet_max_row = worksheet.max_row or 0
+            worksheet_max_column = worksheet.max_column or 0
+            max_col_to_read = min(
+                worksheet_max_column or max_columns,
+                max_columns,
+            )
+            max_row_to_read = min(
+                worksheet_max_row or 1,
+                max_rows + 15,
+            )
+
             preview_rows = list(
                 worksheet.iter_rows(
                     min_row=1,
-                    max_row=min(worksheet.max_row or 1, max_rows + 15),
+                    max_row=max_row_to_read,
+                    max_col=max_col_to_read,
                     values_only=True,
                 )
             )
@@ -376,12 +631,19 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
                 result["sheets"].append(
                     {
                         "sheet_name": worksheet.title,
-                        "max_row": worksheet.max_row,
-                        "max_column": worksheet.max_column,
+                        "max_row": worksheet_max_row,
+                        "max_column": worksheet_max_column,
                         "header_row_index": None,
                         "columns": [],
+                        "columns_count": worksheet_max_column,
                         "sample_rows": [],
                         "row_count_previewed": 0,
+                        "limits_applied": {
+                            "max_preview_rows": max_rows,
+                            "max_preview_columns": max_columns,
+                            "rows_truncated": False,
+                            "columns_truncated": worksheet_max_column > max_columns,
+                        },
                     }
                 )
                 continue
@@ -403,9 +665,10 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
                 for index, value in enumerate(header_row)
             ]
 
-            sample_rows: list[dict[str, str]] = []
-
+            columns = columns[:max_columns]
             data_rows = preview_rows[best_header_index + 1:]
+
+            sample_rows: list[dict[str, str]] = []
 
             for row in data_rows:
                 if len(sample_rows) >= max_rows:
@@ -413,38 +676,58 @@ def _read_xlsx_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
 
                 row_dict: dict[str, str] = {}
 
-                for col_index, value in enumerate(row):
-                    if col_index >= len(columns):
-                        continue
-
+                for col_index, value in enumerate(row[: len(columns)]):
                     column_name = columns[col_index]
                     row_dict[column_name] = _safe_string(value)
 
                 if any(value.strip() for value in row_dict.values()):
                     sample_rows.append(row_dict)
 
+            data_rows_count_estimate = max(
+                worksheet_max_row - best_header_index - 1,
+                0,
+            )
+
             result["sheets"].append(
                 {
                     "sheet_name": worksheet.title,
-                    "max_row": worksheet.max_row,
-                    "max_column": worksheet.max_column,
+                    "max_row": worksheet_max_row,
+                    "max_column": worksheet_max_column,
                     "header_row_index": best_header_index + 1,
                     "header_detection_score": best_score,
                     "columns": columns,
+                    "columns_count": worksheet_max_column,
                     "sample_rows": sample_rows,
                     "row_count_previewed": len(sample_rows),
+                    "limits_applied": {
+                        "max_preview_rows": max_rows,
+                        "max_preview_columns": max_columns,
+                        "rows_truncated": data_rows_count_estimate > max_rows,
+                        "columns_truncated": worksheet_max_column > max_columns,
+                    },
                 }
             )
 
-        workbook.close()
         return result
 
     except Exception as exc:
         result["error"] = str(exc)
         return result
 
+    finally:
+        if workbook is not None:
+            try:
+                workbook.close()
+            except Exception:
+                pass
 
-def _read_xls_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
+
+def _read_xls_preview(
+    file_path: str,
+    *,
+    max_rows: int = MAX_TABLE_PREVIEW_ROWS,
+    max_columns: int = MAX_TABLE_PREVIEW_COLUMNS,
+) -> dict[str, Any]:
     path = Path(file_path)
 
     result: dict[str, Any] = {
@@ -452,6 +735,12 @@ def _read_xls_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
         "file_path": str(path),
         "exists": path.exists(),
         "sheets": [],
+        "limits_applied": {
+            "max_preview_rows": max_rows,
+            "max_preview_columns": max_columns,
+            "rows_truncated": None,
+            "columns_truncated": None,
+        },
         "error": None,
     }
 
@@ -472,18 +761,24 @@ def _read_xls_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
             nrows=max_rows,
         )
 
-        for sheet_name, dataframe in list(sheets.items())[:5]:
+        for sheet_name, dataframe in list(sheets.items())[:MAX_WORKSHEET_PREVIEW_COUNT]:
+            original_columns_count = len(dataframe.columns)
+            limited_dataframe = dataframe.iloc[
+                :max_rows,
+                :max_columns,
+            ]
+
             columns = [
                 _safe_string(column)
-                for column in dataframe.columns.tolist()
+                for column in limited_dataframe.columns.tolist()
             ]
 
             sample_rows: list[dict[str, str]] = []
 
-            for _, row in dataframe.head(max_rows).iterrows():
+            for _, row in limited_dataframe.iterrows():
                 row_dict: dict[str, str] = {}
 
-                for column in dataframe.columns:
+                for column in limited_dataframe.columns:
                     row_dict[_safe_string(column)] = _safe_string(row[column])
 
                 if any(value.strip() for value in row_dict.values()):
@@ -493,10 +788,22 @@ def _read_xls_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
                 {
                     "sheet_name": str(sheet_name),
                     "columns": columns,
+                    "columns_count": original_columns_count,
                     "sample_rows": sample_rows,
                     "row_count_previewed": len(sample_rows),
+                    "limits_applied": {
+                        "max_preview_rows": max_rows,
+                        "max_preview_columns": max_columns,
+                        "rows_truncated": None,
+                        "columns_truncated": original_columns_count > max_columns,
+                    },
                 }
             )
+
+        result["limits_applied"]["columns_truncated"] = any(
+            bool(sheet.get("limits_applied", {}).get("columns_truncated"))
+            for sheet in result["sheets"]
+        )
 
         return result
 
@@ -505,7 +812,11 @@ def _read_xls_preview(file_path: str, max_rows: int = 20) -> dict[str, Any]:
         return result
 
 
-def _read_docx_preview(file_path: str, max_chars: int = 12000) -> dict[str, Any]:
+def _read_docx_preview(
+    file_path: str,
+    *,
+    max_chars: int = MAX_DOCUMENT_TEXT_CHARS,
+) -> dict[str, Any]:
     path = Path(file_path)
 
     result: dict[str, Any] = {
@@ -514,6 +825,10 @@ def _read_docx_preview(file_path: str, max_chars: int = 12000) -> dict[str, Any]
         "exists": path.exists(),
         "text_excerpt": "",
         "paragraph_count_previewed": 0,
+        "limits_applied": {
+            "max_document_text_chars": max_chars,
+            "text_truncated": False,
+        },
         "error": None,
     }
 
@@ -529,7 +844,6 @@ def _read_docx_preview(file_path: str, max_chars: int = 12000) -> dict[str, Any]
 
     try:
         document = Document(path)
-
         parts: list[str] = []
 
         for paragraph in document.paragraphs:
@@ -540,13 +854,22 @@ def _read_docx_preview(file_path: str, max_chars: int = 12000) -> dict[str, Any]
 
             parts.append(text)
 
-            if len("\n".join(parts)) >= max_chars:
+            if len("\n".join(parts)) > max_chars:
                 break
 
         text_excerpt = "\n".join(parts)
+        limited_text, truncated, original_length = _truncate_text(
+            text_excerpt,
+            max_chars,
+        )
 
-        result["text_excerpt"] = text_excerpt[:max_chars]
+        result["text_excerpt"] = limited_text
+        result["text_length_preview_source"] = original_length
         result["paragraph_count_previewed"] = len(parts)
+        result["limits_applied"] = {
+            "max_document_text_chars": max_chars,
+            "text_truncated": truncated,
+        }
 
         return result
 
@@ -557,8 +880,9 @@ def _read_docx_preview(file_path: str, max_chars: int = 12000) -> dict[str, Any]
 
 def _read_pdf_preview(
     file_path: str,
-    max_pages: int = 8,
-    max_chars: int = 12000,
+    *,
+    max_pages: int = MAX_PDF_PREVIEW_PAGES,
+    max_chars: int = MAX_DOCUMENT_TEXT_CHARS,
 ) -> dict[str, Any]:
     path = Path(file_path)
 
@@ -567,7 +891,14 @@ def _read_pdf_preview(
         "file_path": str(path),
         "exists": path.exists(),
         "text_excerpt": "",
+        "pages_count": None,
         "pages_previewed": 0,
+        "limits_applied": {
+            "max_pdf_preview_pages": max_pages,
+            "max_document_text_chars": max_chars,
+            "text_truncated": False,
+            "pages_truncated": False,
+        },
         "error": None,
     }
 
@@ -587,9 +918,11 @@ def _read_pdf_preview(
 
         page_count = len(reader.pages)
         pages_to_read = min(page_count, max_pages)
+        pages_previewed = 0
 
         for page_index in range(pages_to_read):
             page = reader.pages[page_index]
+            pages_previewed = page_index + 1
 
             try:
                 text = page.extract_text() or ""
@@ -601,13 +934,25 @@ def _read_pdf_preview(
             if text:
                 parts.append(f"--- page {page_index + 1} ---\n{text}")
 
-            if len("\n\n".join(parts)) >= max_chars:
+            if len("\n\n".join(parts)) > max_chars:
                 break
 
         text_excerpt = "\n\n".join(parts)
+        limited_text, truncated, original_length = _truncate_text(
+            text_excerpt,
+            max_chars,
+        )
 
-        result["text_excerpt"] = text_excerpt[:max_chars]
-        result["pages_previewed"] = pages_to_read
+        result["text_excerpt"] = limited_text
+        result["text_length_preview_source"] = original_length
+        result["pages_count"] = page_count
+        result["pages_previewed"] = pages_previewed
+        result["limits_applied"] = {
+            "max_pdf_preview_pages": max_pages,
+            "max_document_text_chars": max_chars,
+            "text_truncated": truncated,
+            "pages_truncated": page_count > pages_previewed,
+        }
 
         if not result["text_excerpt"]:
             result["error"] = "no_text_layer_or_scanned_pdf"
@@ -649,7 +994,7 @@ def _collect_preview_columns_and_text(
 def _detect_attachment_signals(preview: dict[str, Any]) -> dict[str, Any]:
     columns, text_parts = _collect_preview_columns_and_text(preview)
 
-    normalized_columns = set()
+    normalized_columns: set[str] = set()
 
     for column in columns:
         text = str(column).strip().lower()
@@ -657,11 +1002,9 @@ def _detect_attachment_signals(preview: dict[str, Any]) -> dict[str, Any]:
         if not text:
             continue
 
-        # Не считаем случайные числовые значения заголовками колонок.
         if text.replace(".", "", 1).isdigit():
             continue
 
-        # Не тащим слишком длинные описательные строки в detected_columns.
         if len(text) > 80:
             continue
 
@@ -752,67 +1095,124 @@ def _detect_attachment_signals(preview: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _build_skipped_preview(
+    *,
+    file_path: str,
+    exists: bool,
+    reason: str,
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "kind": "attachment_preview_skipped",
+        "file_path": file_path,
+        "exists": exists,
+        "error": reason,
+        "details": details or {},
+        "attachment_review_policy": _build_attachment_limits_summary(),
+    }
+
+
 def _build_attachment_data_previews(
     attachments: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     previews: list[dict[str, Any]] = []
+    preview_size_budget_used = 0
 
-    for attachment in attachments:
+    for index, attachment in enumerate(attachments):
         original_filename = attachment.get("original_filename") or ""
         file_path = attachment.get("file_path") or ""
+        resolved_path = _resolve_existing_path(file_path)
         suffix = Path(original_filename or file_path).suffix.lower()
 
-        item: dict[str, Any] = {
-            "attachment_id": attachment.get("id"),
-            "input_pack_id": attachment.get("input_pack_id"),
-            "original_filename": original_filename,
-            "stored_filename": attachment.get("stored_filename"),
-            "file_type": attachment.get("file_type"),
-            "uploaded_at": attachment.get("uploaded_at"),
-            "file_path": file_path,
-            "suffix": suffix,
-            "preview": None,
-            "detected_signals": None,
-        }
+        item = _make_attachment_item(
+            attachment=attachment,
+            resolved_path=resolved_path,
+            suffix=suffix,
+        )
 
-        if not file_path:
-            item["preview"] = {
-                "kind": "missing_file_path",
-                "error": "attachment_file_path_is_empty",
-            }
-            item["detected_signals"] = _detect_attachment_signals(item["preview"])
-            previews.append(item)
-            continue
+        size_bytes = item.get("file_size_bytes")
+        exists = bool(item.get("exists"))
 
-        if suffix in {".xlsx", ".xlsm"}:
-            preview = _read_xlsx_preview(file_path)
+        if index >= MAX_ATTACHMENTS_PER_BRIEF:
+            preview = _build_skipped_preview(
+                file_path=str(resolved_path),
+                exists=exists,
+                reason="attachments_count_limit_reached",
+                details={
+                    "max_attachments_per_brief": MAX_ATTACHMENTS_PER_BRIEF,
+                    "attachment_index": index,
+                },
+            )
+
+        elif not file_path:
+            preview = _build_skipped_preview(
+                file_path="",
+                exists=False,
+                reason="attachment_file_path_is_empty",
+            )
+
+        elif not exists:
+            preview = _build_skipped_preview(
+                file_path=str(resolved_path),
+                exists=False,
+                reason="file_not_found",
+            )
+
+        elif size_bytes is not None and size_bytes > MAX_ATTACHMENT_SIZE_BYTES:
+            preview = _build_skipped_preview(
+                file_path=str(resolved_path),
+                exists=True,
+                reason="single_attachment_size_limit_exceeded",
+                details={
+                    "file_size_bytes": size_bytes,
+                    "file_size_mb": _bytes_to_mb(size_bytes),
+                    "max_attachment_size_mb": MAX_ATTACHMENT_SIZE_MB,
+                },
+            )
+
+        elif (
+            size_bytes is not None
+            and preview_size_budget_used + size_bytes > MAX_TOTAL_ATTACHMENTS_SIZE_BYTES
+        ):
+            preview = _build_skipped_preview(
+                file_path=str(resolved_path),
+                exists=True,
+                reason="total_attachment_size_limit_exceeded",
+                details={
+                    "file_size_bytes": size_bytes,
+                    "file_size_mb": _bytes_to_mb(size_bytes),
+                    "current_total_preview_size_bytes": preview_size_budget_used,
+                    "max_total_attachments_size_mb": MAX_TOTAL_ATTACHMENTS_SIZE_MB,
+                },
+            )
+
+        elif suffix in {".xlsx", ".xlsm"}:
+            preview_size_budget_used += size_bytes or 0
+            preview = _read_xlsx_preview(str(resolved_path))
 
         elif suffix == ".xls":
-            preview = _read_xls_preview(file_path)
+            preview_size_budget_used += size_bytes or 0
+            preview = _read_xls_preview(str(resolved_path))
 
         elif suffix == ".csv":
-            preview = _read_csv_preview(file_path)
+            preview_size_budget_used += size_bytes or 0
+            preview = _read_csv_preview(str(resolved_path))
 
         elif suffix == ".docx":
-            preview = _read_docx_preview(file_path)
+            preview_size_budget_used += size_bytes or 0
+            preview = _read_docx_preview(str(resolved_path))
 
         elif suffix == ".pdf":
-            preview = _read_pdf_preview(file_path)
+            preview_size_budget_used += size_bytes or 0
+            preview = _read_pdf_preview(str(resolved_path))
 
         else:
             preview = {
                 "kind": "unsupported_preview",
-                "file_path": file_path,
-                "exists": Path(file_path).exists(),
+                "file_path": str(resolved_path),
+                "exists": exists,
                 "error": "unsupported_file_type",
-                "supported_formats": [
-                    ".xlsx",
-                    ".xlsm",
-                    ".xls",
-                    ".csv",
-                    ".docx",
-                    ".pdf",
-                ],
+                "supported_formats": sorted(SUPPORTED_ATTACHMENT_PREVIEW_SUFFIXES),
             }
 
         item["preview"] = preview
@@ -822,8 +1222,113 @@ def _build_attachment_data_previews(
 
     return previews
 
+
+def _compact_attachment_item_for_prompt(
+    item: dict[str, Any],
+    *,
+    reason: str,
+    max_excerpt_chars: int,
+) -> dict[str, Any]:
+    preview = item.get("preview") or {}
+    serialized = json.dumps(
+        item,
+        ensure_ascii=False,
+        default=str,
+    )
+
+    excerpt = _limit_text(serialized, max(max_excerpt_chars, 0))
+
+    return {
+        "attachment_id": item.get("attachment_id"),
+        "input_pack_id": item.get("input_pack_id"),
+        "original_filename": item.get("original_filename"),
+        "stored_filename": item.get("stored_filename"),
+        "file_type": item.get("file_type"),
+        "uploaded_at": item.get("uploaded_at"),
+        "suffix": item.get("suffix"),
+        "exists": item.get("exists"),
+        "file_size_bytes": item.get("file_size_bytes"),
+        "file_size_mb": item.get("file_size_mb"),
+        "detected_signals": item.get("detected_signals"),
+        "preview_summary": {
+            "kind": preview.get("kind"),
+            "exists": preview.get("exists"),
+            "error": preview.get("error"),
+            "limits_applied": preview.get("limits_applied"),
+        },
+        "preview_truncated_for_prompt": True,
+        "prompt_truncation_reason": reason,
+        "serialized_preview_excerpt": excerpt,
+    }
+
+
+def _limit_attachment_prompt_blocks(
+    previews: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    limited_previews: list[dict[str, Any]] = []
+    used_chars = 0
+
+    for item in previews:
+        remaining_total_chars = MAX_TOTAL_ATTACHMENT_PROMPT_CHARS - used_chars
+
+        if remaining_total_chars <= 0:
+            limited_previews.append(
+                {
+                    "kind": "attachment_preview_skipped",
+                    "reason": "total_attachment_prompt_limit_reached",
+                    "limit_chars": MAX_TOTAL_ATTACHMENT_PROMPT_CHARS,
+                    "attachment_review_policy": _build_attachment_limits_summary(),
+                }
+            )
+            break
+
+        serialized = json.dumps(
+            item,
+            ensure_ascii=False,
+            default=str,
+        )
+
+        per_item_limit = min(
+            MAX_SINGLE_ATTACHMENT_PROMPT_CHARS,
+            remaining_total_chars,
+        )
+
+        if len(serialized) > per_item_limit:
+            item_for_prompt = _compact_attachment_item_for_prompt(
+                item,
+                reason="single_or_total_attachment_prompt_limit_applied",
+                max_excerpt_chars=per_item_limit,
+            )
+        else:
+            item_for_prompt = item
+
+        item_serialized = json.dumps(
+            item_for_prompt,
+            ensure_ascii=False,
+            default=str,
+        )
+
+        if len(item_serialized) > remaining_total_chars:
+            item_for_prompt = _compact_attachment_item_for_prompt(
+                item,
+                reason="total_attachment_prompt_limit_applied",
+                max_excerpt_chars=remaining_total_chars,
+            )
+            item_serialized = json.dumps(
+                item_for_prompt,
+                ensure_ascii=False,
+                default=str,
+            )
+
+        limited_previews.append(item_for_prompt)
+        used_chars += min(len(item_serialized), remaining_total_chars)
+
+    return limited_previews
+
+
 def _build_attachment_evidence_summary(
     attachment_data_previews: list[dict[str, Any]],
+    attachment_inventory: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     field_sources: dict[str, list[str]] = {
         "event_id": [],
@@ -840,6 +1345,8 @@ def _build_attachment_evidence_summary(
     technical_regulation_files: list[str] = []
     commission_act_files: list[str] = []
     detected_columns_by_file: list[dict[str, Any]] = []
+    files_reviewed: list[str] = []
+    files_skipped: list[dict[str, Any]] = []
 
     for item in attachment_data_previews:
         filename = (
@@ -850,6 +1357,27 @@ def _build_attachment_evidence_summary(
 
         preview = item.get("preview") or {}
         signals = item.get("detected_signals") or {}
+        preview_kind = preview.get("kind")
+        preview_error = preview.get("error")
+
+        if preview_kind == "attachment_preview_skipped":
+            files_skipped.append(
+                {
+                    "filename": filename,
+                    "reason": preview_error,
+                    "details": preview.get("details") or {},
+                }
+            )
+        elif preview_error:
+            files_skipped.append(
+                {
+                    "filename": filename,
+                    "reason": preview_error,
+                    "details": {},
+                }
+            )
+        else:
+            files_reviewed.append(filename)
 
         if signals.get("downtime_log_detected"):
             downtime_log_files.append(filename)
@@ -928,6 +1456,11 @@ def _build_attachment_evidence_summary(
     )
 
     return {
+        "files_count": len(attachment_data_previews),
+        "files_reviewed": sorted(set(files_reviewed)),
+        "files_skipped": files_skipped,
+        "attachment_inventory": attachment_inventory or {},
+        "attachment_review_policy": _build_attachment_limits_summary(),
         "downtime_log_files": sorted(set(downtime_log_files)),
         "technical_regulation_files": sorted(set(technical_regulation_files)),
         "commission_act_files": sorted(set(commission_act_files)),
@@ -938,6 +1471,11 @@ def _build_attachment_evidence_summary(
         "minimum_downtime_export_fields_present": minimum_downtime_export_fields_present,
         "detected_columns_by_file": detected_columns_by_file,
         "d001_interpretation_rules": {
+            "attachment_review_mode": [
+                "Uploaded files are used only in limited consulting-grade review mode.",
+                "Use attachment previews for data structure, field presence, MVP readiness and baseline requirements.",
+                "Do not claim full BI analytics, deep sensor analytics, production model training or final ROI calculation.",
+            ],
             "if_minimum_downtime_export_fields_present": [
                 "Do not say that event_id, line_id, equipment_id, start/end timestamps, duration or downtime reason are missing.",
                 "Treat identifiers and timestamps as present in the test export.",
@@ -955,6 +1493,7 @@ def _build_attachment_evidence_summary(
             ],
         },
     }
+
 
 def _replace_markdown_table_row(
     markdown: str,
@@ -1098,8 +1637,54 @@ def _postprocess_d001_with_attachment_evidence(
     for old_text, new_text in replacements.items():
         result = result.replace(old_text, new_text)
 
+    # Не завышаем уверенность в экономике и KPI.
+    result = result.replace(
+        "| Подтверждённые числа  | 80–120 событий в месяц | HIGH |  |",
+        "| Предварительно указанные числа | 80–120 событий в месяц | MEDIUM | Требует подтверждения на baseline-периоде |",
+    )
+
+    result = result.replace(
+        "| Подтвержденные числа  | 80–120 событий в месяц | HIGH |  |",
+        "| Предварительно указанные числа | 80–120 событий в месяц | MEDIUM | Требует подтверждения на baseline-периоде |",
+    )
+
+    result = result.replace(
+        "| KPI можно измерить          | YES                          | Снижение простоев на 5–10% | —               | —                |",
+        "| KPI можно измерить          | YES_WITH_VALIDATION          | Гипотезу KPI можно проверить после фиксации baseline, периода сравнения и правил расчёта | Подтвердить baseline и критерии успеха | MEDIUM           |",
+    )
+
+    result = result.replace(
+        "| Качество данных понятно     | PARTIAL                      | Дубликаты, пропуски | Требует уточнения | Влияет на анализ |",
+        "| Качество данных понятно     | PARTIAL                      | Структура видна на тестовой выгрузке | Проверить дубликаты, пропуски, стабильность формата и полноту периода | Влияет на D-002 и MVP |",
+    )
+
+    result = result.replace(
+        "| Потенциальный эффект  | 5–10% снижение простоев | MEDIUM |  |",
+        "| Потенциальный эффект  | Предварительная гипотеза снижения управляемых потерь | MEDIUM | Конкретный эффект фиксируется после baseline |",
+    )
+
+    result = result.replace(
+        "| KPI успеха | Проверить гипотезу снижения простоев на 5–10% и сокращения ручной отчетности на 20–30%. |",
+        "| KPI успеха | Проверить гипотезу снижения управляемых потерь и сокращения ручной работы; конкретные целевые значения фиксируются после baseline. |",
+    )
+
+    result = result.replace(
+        "| KPI успеха | Проверить гипотезу снижения простоев на 5–10% и сокращения ручной отчётности на 20–30%. |",
+        "| KPI успеха | Проверить гипотезу снижения управляемых потерь и сокращения ручной работы; конкретные целевые значения фиксируются после baseline. |",
+    )
+
+    result = result.replace(
+        "Интеграции с MES и WMS отсутствуют, что также требует внимания.",
+        "Интеграции с MES/SCADA/API не обязательны для первого MVP и могут быть отложены до подтверждения ценности пилота.",
+    )
+
+    result = result.replace(
+        "Интеграции с MES и WMS отсутствуют",
+        "Интеграции с MES/SCADA/API не обязательны для первого MVP",
+    )
+
     evidence_note = f"""
-> Комментарий по приложенным материалам: загруженные файлы содержат минимальный набор полей для анализа простоев: event_id, line_id, equipment_id, start_time, end_time, duration_min и reason_code/reason_description. Источники: {evidence_files}. Поэтому D-001 считает эти поля представленными в тестовой выгрузке; оставшиеся ограничения относятся к репрезентативности, стабильности формата, качеству данных, timezone, baseline и правилам ИБ.
+> Комментарий по приложенным материалам: загруженные файлы использованы в режиме limited consulting-grade review. Они содержат минимальный набор полей для анализа простоев: event_id, line_id, equipment_id, start_time, end_time, duration_min и reason_code/reason_description. Источники: {evidence_files}. Поэтому D-001 считает эти поля представленными в тестовой выгрузке; оставшиеся ограничения относятся к репрезентативности, стабильности формата, качеству данных, timezone, baseline и правилам ИБ. Глубокая BI-аналитика, production-моделирование и финальный расчёт ROI по файлам не выполнялись.
 """.strip()
 
     if "Комментарий по приложенным материалам:" not in result and "## 2. Что уже известно" in result:
@@ -1124,24 +1709,36 @@ def get_latest_input_pack_for_d001(diagnostic_run_id: int) -> dict[str, Any]:
     )
 
     attachments = _get_attachments_for_input_pack(int(input_pack["id"]))
+    attachment_inventory = _build_attachment_inventory(attachments)
     attachment_data_previews = _build_attachment_data_previews(attachments)
     attachment_evidence_summary = _build_attachment_evidence_summary(
-        attachment_data_previews
+        attachment_data_previews,
+        attachment_inventory,
     )
 
     return {
         "input_pack": input_pack,
         "raw_payload": raw_payload,
         "attachments": attachments,
+        "attachment_inventory": attachment_inventory,
         "attachment_data_previews": attachment_data_previews,
+        "attachment_data_previews_for_prompt": _limit_attachment_prompt_blocks(
+            attachment_data_previews
+        ),
         "attachment_evidence_summary": attachment_evidence_summary,
     }
 
 
-def ensure_normalized_payload(diagnostic_run_id: int) -> dict[str, Any]:
-    data = get_latest_input_pack_for_d001(diagnostic_run_id)
-    input_pack = data["input_pack"]
-    raw_payload = data["raw_payload"]
+def ensure_normalized_payload(
+    diagnostic_run_id: int,
+    *,
+    input_pack: dict[str, Any] | None = None,
+    raw_payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if input_pack is None or raw_payload is None:
+        data = get_latest_input_pack_for_d001(diagnostic_run_id)
+        input_pack = data["input_pack"]
+        raw_payload = data["raw_payload"]
 
     if raw_payload.get("brief_type") == "industrial_ai":
         return raw_payload
@@ -1160,13 +1757,23 @@ def get_existing_d001_result(diagnostic_run_id: int) -> str | None:
     return diagnostic_run["d001_result"] or None
 
 
-def build_d001_prompt_input(diagnostic_run_id: int) -> str:
+def build_d001_prompt_input(
+    diagnostic_run_id: int,
+    *,
+    data: dict[str, Any] | None = None,
+) -> str:
     diagnostic_run = _get_diagnostic_run_row(diagnostic_run_id)
-    data = get_latest_input_pack_for_d001(diagnostic_run_id)
+
+    if data is None:
+        data = get_latest_input_pack_for_d001(diagnostic_run_id)
 
     input_pack = data["input_pack"]
     raw_payload = data["raw_payload"]
-    normalized_payload = ensure_normalized_payload(diagnostic_run_id)
+    normalized_payload = ensure_normalized_payload(
+        diagnostic_run_id,
+        input_pack=input_pack,
+        raw_payload=raw_payload,
+    )
 
     safe_diagnostic_run = _sanitize_diagnostic_run(diagnostic_run)
 
@@ -1185,6 +1792,8 @@ def build_d001_prompt_input(diagnostic_run_id: int) -> str:
             raw_payload.get("industrial_ai", {})
         ),
     }
+
+    attachment_review_policy = _build_attachment_limits_summary()
 
     return f"""
 # INPUT FOR D-001 DIAGNOSTIC ASSESSMENT AGENT
@@ -1214,13 +1823,32 @@ If this section conflicts with the raw payload above, the raw payload wins.
 
 {json.dumps(normalized_payload, ensure_ascii=False, indent=2)}
 
+## Attachment Review Policy
+
+Uploaded files are used in limited consulting-grade review mode.
+
+Use attachments for:
+- checking data structure;
+- detecting key fields;
+- evaluating MVP readiness;
+- forming baseline, identifier, regular export and data-quality requirements.
+
+Do not use attachments for:
+- full BI analytics;
+- deep sensor analytics;
+- production model training;
+- final ROI calculation;
+- legal or audit-grade conclusions.
+
+{json.dumps(attachment_review_policy, ensure_ascii=False, indent=2)}
+
+## Attachments Inventory
+
+{json.dumps(data.get("attachment_inventory", {}), ensure_ascii=False, indent=2)}
+
 ## Attachments Summary
 
-{json.dumps(data["attachments"], ensure_ascii=False, indent=2)}
-
-## Attachments Summary
-
-{json.dumps(data["attachments"], ensure_ascii=False, indent=2)}
+{json.dumps(data.get("attachments", []), ensure_ascii=False, indent=2)}
 
 ## Attachment Evidence Summary
 
@@ -1250,19 +1878,22 @@ You may still require confirmation of:
 
 ## Attachments Data Preview
 
-This section contains parsed previews of supported attachments:
+This section contains limited parsed previews of supported attachments:
 Excel/XLSX/XLSM/XLS, CSV, Word/DOCX and PDF.
 
 For Excel/CSV files, use columns and sample rows as evidence of data availability.
 For Word/PDF files, use extracted text as evidence of documented process, constraints,
 baseline, security requirements, data field descriptions or export specification.
 
+The full files are stored, but this prompt receives only compact previews and evidence summaries.
+Respect the limits in Attachment Review Policy.
+
 If the preview contains event_id, line_id, equipment_id, start/end timestamps,
 duration and downtime reason fields, do not state that these fields are missing.
 You may still require confirmation that the export is representative, complete,
 stable, approved by the client and safe to process.
 
-{json.dumps(data.get("attachment_data_previews", []), ensure_ascii=False, indent=2)}
+{json.dumps(data.get("attachment_data_previews_for_prompt", []), ensure_ascii=False, indent=2)}
 """.strip()
 
 
@@ -1275,21 +1906,23 @@ def run_d001_diagnostic_assessment(
     if existing_result and not force_rebuild:
         return existing_result
 
-    validate_d001_input(diagnostic_run_id)
+    d001_data = get_latest_input_pack_for_d001(diagnostic_run_id)
 
     update_diagnostic_status(
         diagnostic_run_id=diagnostic_run_id,
         status=DIAGNOSTIC_STATUS_D001_RUNNING,
     )
 
-    prompt_input = build_d001_prompt_input(diagnostic_run_id)
+    prompt_input = build_d001_prompt_input(
+        diagnostic_run_id,
+        data=d001_data,
+    )
 
     result = run_agent_with_prompt(
         agent_prompt_name=D001_AGENT_PROMPT_NAME,
         user_input=prompt_input,
     )
 
-    d001_data = get_latest_input_pack_for_d001(diagnostic_run_id)
     result = _postprocess_d001_with_attachment_evidence(
         markdown=result,
         evidence_summary=d001_data.get("attachment_evidence_summary", {}),

@@ -801,6 +801,18 @@
                 <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
                   {{ attachment.uploaded_at or "—" }}
                 </td>
+                <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+  <form
+    method="post"
+    action="{{ url_for('diagnostic.delete_attachment', token=token, attachment_id=attachment.id) }}"
+    onsubmit="return confirm('Удалить этот файл?');"
+    style="display: inline;"
+  >
+    <button type="submit" class="button secondary">
+      Удалить
+    </button>
+  </form>
+</td>
               </tr>
             {% endfor %}
           </tbody>
