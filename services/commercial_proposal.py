@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from typing import Any
 
@@ -309,6 +310,18 @@ def get_d004_input(diagnostic_run_id: int) -> dict[str, Any]:
         input_pack_id=int(input_pack["id"]),
     )
 
+    context_for_case_type = "\n".join(
+        [
+            json.dumps(payloads, ensure_ascii=False),
+            diagnostic_run["d001_result"] or "",
+            diagnostic_run["d002_result"] or "",
+            diagnostic_run["d003_result"] or "",
+        ]
+    )
+
+    primary_case_type = _extract_case_type_from_text(context_for_case_type)
+    case_profile = build_case_profile(primary_case_type)
+
     return {
         "diagnostic_run": diagnostic_run,
         "lead": lead,
@@ -321,12 +334,183 @@ def get_d004_input(diagnostic_run_id: int) -> dict[str, Any]:
         "payload_source": payloads["payload_source"],
         "brief_type": payloads["brief_type"],
         "attachments": attachments,
+        "case_profile": case_profile,
         "d001_result": diagnostic_run["d001_result"] or "",
         "d002_summary": diagnostic_run["d002_summary"] or "",
         "d002_result": diagnostic_run["d002_result"] or "",
         "d003_summary": diagnostic_run["d003_summary"] or "",
         "d003_result": diagnostic_run["d003_result"] or "",
     }
+
+def _extract_case_type_from_text(text: str) -> str:
+    patterns = [
+        r'"primary_case_type"\s*:\s*"([^"]+)"',
+        r'"case_type"\s*:\s*"([^"]+)"',
+        r'"use_case_type"\s*:\s*"([^"]+)"',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text or "")
+
+        if match:
+            value = match.group(1).strip()
+
+            if value:
+                return value
+
+    lowered = (text or "").lower()
+
+    if any(token in lowered for token in ["downtime_analysis", "простои", "простой", "останов"]):
+        return "downtime_analysis"
+
+    if any(token in lowered for token in ["quality_defects", "брак", "дефект", "качество"]):
+        return "quality_defects"
+
+    if any(token in lowered for token in ["energy_optimization", "энерг", "электроэнерг"]):
+        return "energy_optimization"
+
+    if any(token in lowered for token in ["maintenance_optimization", "тоир", "ремонт", "maintenance"]):
+        return "maintenance_optimization"
+
+    if any(token in lowered for token in ["cycle_time", "время цикла", "производственный цикл"]):
+        return "process_cycle_time"
+
+    if any(token in lowered for token in ["inventory", "stock", "склад", "запас", "поставка"]):
+        return "inventory_or_supply"
+
+    if any(token in lowered for token in ["document", "документ", "заявк", "договор", "акт"]):
+        return "document_workflow"
+
+    if any(token in lowered for token in ["support", "обращен", "тикет", "запрос клиента"]):
+        return "customer_support"
+
+    return "generic_industrial_ai"
+
+
+def build_case_profile(primary_case_type: str) -> dict[str, str]:
+    profiles: dict[str, dict[str, str]] = {
+        "downtime_analysis": {
+            "case_type": "downtime_analysis",
+            "case_name": "анализ простоев",
+            "business_problem": "потери из-за простоев, ручного разбора событий и запаздывающих решений",
+            "loss_object": "управляемые простои",
+            "event_name": "события простоев",
+            "object_name": "линия / оборудование / участок",
+            "reason_name": "причины остановок",
+            "effect_name": "снижение управляемых простоев и сокращение ручного анализа",
+            "mvp_focus": "выявление повторяющихся причин простоев и ранжирование объектов по вкладу в потери",
+            "data_requirements": "ID события, ID объекта, временные метки, длительность, причина / комментарий",
+            "kpi_language": "снижение управляемых простоев, сокращение ручной работы, пригодность данных для регулярного анализа",
+        },
+        "quality_defects": {
+            "case_type": "quality_defects",
+            "case_name": "анализ дефектов и отклонений качества",
+            "business_problem": "потери из-за брака, переделок, рекламаций и ручного разбора причин качества",
+            "loss_object": "дефекты / отклонения качества",
+            "event_name": "события качества / дефекты",
+            "object_name": "партия / изделие / линия / участок",
+            "reason_name": "причины дефектов",
+            "effect_name": "снижение повторяющихся дефектов и ускорение анализа причин качества",
+            "mvp_focus": "выявление повторяющихся причин дефектов и ранжирование факторов по вкладу в проблему",
+            "data_requirements": "ID партии / изделия, дата, тип дефекта, участок, причина / комментарий, статус проверки",
+            "kpi_language": "снижение повторяющихся дефектов, сокращение ручного разбора, пригодность данных для регулярного анализа качества",
+        },
+        "energy_optimization": {
+            "case_type": "energy_optimization",
+            "case_name": "анализ энергопотребления",
+            "business_problem": "потери из-за избыточного энергопотребления, пиковых нагрузок и слабой прозрачности факторов потребления",
+            "loss_object": "избыточное энергопотребление",
+            "event_name": "периоды / точки потребления",
+            "object_name": "линия / оборудование / участок / счётчик",
+            "reason_name": "факторы перерасхода",
+            "effect_name": "выявление зон перерасхода и проверка гипотезы снижения энергозатрат",
+            "mvp_focus": "ранжирование объектов и режимов по вкладу в энергопотребление",
+            "data_requirements": "ID объекта, период, потребление, режим работы, выпуск / нагрузка, тариф / стоимость",
+            "kpi_language": "снижение управляемого перерасхода, прозрачность факторов потребления, пригодность данных для регулярного анализа",
+        },
+        "maintenance_optimization": {
+            "case_type": "maintenance_optimization",
+            "case_name": "оптимизация ТОиР",
+            "business_problem": "потери из-за внеплановых ремонтов, повторных отказов и слабой приоритизации работ",
+            "loss_object": "внеплановые ремонты / повторные отказы",
+            "event_name": "ремонтные события / заявки ТОиР",
+            "object_name": "оборудование / узел / линия",
+            "reason_name": "причины ремонтов / отказов",
+            "effect_name": "сокращение повторных отказов и повышение управляемости ТОиР",
+            "mvp_focus": "ранжирование оборудования и причин по вкладу в ремонтную нагрузку",
+            "data_requirements": "ID заявки, ID оборудования, дата, тип работы, причина, длительность, статус, комментарий",
+            "kpi_language": "снижение повторных отказов, сокращение ручного анализа ТОиР, пригодность данных для регулярного контроля",
+        },
+        "process_cycle_time": {
+            "case_type": "process_cycle_time",
+            "case_name": "анализ времени цикла",
+            "business_problem": "потери из-за длительных циклов, очередей, ручных согласований и слабой прозрачности узких мест",
+            "loss_object": "задержки / длительность цикла",
+            "event_name": "этапы процесса / операции",
+            "object_name": "процесс / заявка / заказ / операция",
+            "reason_name": "причины задержек",
+            "effect_name": "сокращение длительности цикла и выявление узких мест",
+            "mvp_focus": "выявление этапов, факторов и объектов, формирующих задержки",
+            "data_requirements": "ID процесса / заявки, этап, статус, дата начала, дата завершения, ответственный, комментарий",
+            "kpi_language": "сокращение времени цикла, снижение ручной работы, пригодность данных для регулярного анализа процесса",
+        },
+        "inventory_or_supply": {
+            "case_type": "inventory_or_supply",
+            "case_name": "анализ запасов и поставок",
+            "business_problem": "потери из-за дефицитов, избыточных запасов, задержек поставок и ручного планирования",
+            "loss_object": "дефициты / излишки / задержки поставок",
+            "event_name": "движения запасов / поставки / заказы",
+            "object_name": "SKU / материал / поставщик / склад",
+            "reason_name": "причины дефицитов или задержек",
+            "effect_name": "повышение прозрачности запасов и снижение управляемых потерь в снабжении",
+            "mvp_focus": "ранжирование SKU, поставщиков или складов по вкладу в проблему",
+            "data_requirements": "ID SKU, дата, остаток, заказ, поставка, потребление, поставщик, статус",
+            "kpi_language": "снижение дефицитов / излишков, сокращение ручного анализа, пригодность данных для регулярного контроля",
+        },
+        "document_workflow": {
+            "case_type": "document_workflow",
+            "case_name": "анализ документооборота",
+            "business_problem": "потери из-за ручной обработки документов, задержек согласования и ошибок классификации",
+            "loss_object": "ручная обработка / задержки / ошибки документов",
+            "event_name": "документы / заявки / согласования",
+            "object_name": "документ / заявка / контрагент / процесс",
+            "reason_name": "причины задержек или ошибок",
+            "effect_name": "сокращение ручной обработки и ускорение прохождения документов",
+            "mvp_focus": "классификация документов, выявление узких мест и подготовка управленческого отчёта",
+            "data_requirements": "ID документа, тип, дата поступления, статус, ответственный, дата завершения, комментарий",
+            "kpi_language": "сокращение ручной обработки, снижение ошибок, пригодность данных для регулярного контроля документооборота",
+        },
+        "customer_support": {
+            "case_type": "customer_support",
+            "case_name": "анализ клиентских обращений",
+            "business_problem": "потери из-за ручной классификации обращений, долгих ответов и повторяющихся проблем клиентов",
+            "loss_object": "длительность обработки / повторяющиеся обращения",
+            "event_name": "обращения / тикеты / запросы",
+            "object_name": "клиент / обращение / категория / канал",
+            "reason_name": "темы и причины обращений",
+            "effect_name": "ускорение обработки обращений и выявление повторяющихся проблем",
+            "mvp_focus": "классификация обращений и ранжирование тем по вкладу в нагрузку",
+            "data_requirements": "ID обращения, дата, канал, категория, текст, статус, время ответа, ответственный",
+            "kpi_language": "сокращение ручной классификации, снижение времени реакции, пригодность данных для регулярного анализа обращений",
+        },
+    }
+
+    return profiles.get(
+        primary_case_type,
+        {
+            "case_type": "generic_industrial_ai",
+            "case_name": "прикладной AI-кейс",
+            "business_problem": "управляемые потери, ручной анализ и запаздывающие решения",
+            "loss_object": "управляемые потери",
+            "event_name": "события / операции / записи процесса",
+            "object_name": "объект процесса / линия / участок / заявка",
+            "reason_name": "причины / факторы проблемы",
+            "effect_name": "снижение управляемых потерь и сокращение ручного анализа",
+            "mvp_focus": "выявление повторяющихся причин / паттернов и ранжирование объектов или факторов по вкладу в проблему",
+            "data_requirements": "ID объекта или события, дата / время, статус, категория, причина / комментарий, экономический показатель",
+            "kpi_language": "снижение управляемых потерь, сокращение ручной работы, пригодность данных для регулярного анализа",
+        },
+    )
 
 
 def build_d004_prompt_input(diagnostic_run_id: int) -> str:
@@ -348,6 +532,13 @@ def build_d004_prompt_input(diagnostic_run_id: int) -> str:
 ## Diagnostic Run
 
 {json.dumps(safe_diagnostic_run, ensure_ascii=False, indent=2)}
+
+## Case Profile
+
+Use this profile to adapt all client-facing wording.
+Do not force downtime-specific language if case_profile.case_type is not downtime_analysis.
+
+{json.dumps(data["case_profile"], ensure_ascii=False, indent=2)}
 
 ## Selected Input Pack
 
@@ -460,304 +651,842 @@ def build_d004_summary(result: str) -> str:
 
 def postprocess_d004_result(result: str, prompt_input: str) -> str:
     """
-    Исправляет устойчивые формальные ошибки D-004 для Industrial AI / downtime_analysis.
+    Финальная нормализация D-004.
 
-    Важно:
-    - если в Industrial Brief указано частичное наличие MES / SCADA, не удаляем это из контекста;
-    - но не разрешаем делать MES / SCADA обязательной интеграцией первого MVP;
-    - строки, добавленные postprocess-ом, должны оставаться внутри markdown-таблиц.
+    D-004 теперь должен быть единым клиентским business value report,
+    а не связкой "технический диагностический отчёт + КП".
+
+    Основные задачи:
+    - убрать legacy diagnostic report, если модель его всё ещё сгенерировала;
+    - оставить один клиентский документ;
+    - смягчить внутренние статусы;
+    - не допустить фраз "файл нужно передать", если вложения уже есть;
+    - не возвращать старую структуру data audit.
     """
-    is_downtime = '"primary_case_type": "downtime_analysis"' in prompt_input
-    is_industrial = '"brief_type": "industrial_ai"' in prompt_input
+    fixed = (result or "").strip()
 
-    if not is_downtime and not is_industrial:
-        return result
+    if not fixed:
+        return fixed
 
-    fixed = result
+    def strip_before_last_business_report(markdown: str) -> str:
+        markers = [
+            "# Итоговый отчёт AIha Consulting — Industrial AI",
+            "# Итоговый отчет AIha Consulting — Industrial AI",
+        ]
 
-    def replace_table_row_by_first_cell(markdown: str, first_cell: str, new_row: str) -> str:
+        last_position = -1
+
+        for marker in markers:
+            position = markdown.rfind(marker)
+
+            if position > last_position:
+                last_position = position
+
+        if last_position > 0:
+            return markdown[last_position:].strip()
+
+        return markdown.strip()
+
+    def remove_legacy_wrapper(markdown: str) -> str:
+        legacy_markers = [
+            "## Коммерческое предложение на следующий этап",
+            "# Коммерческое предложение AIha Consulting — Industrial AI",
+            "# Итоговый диагностический отчёт AIha Consulting — Industrial AI",
+            "# Итоговый диагностический отчет AIha Consulting — Industrial AI",
+        ]
+
+        business_markers = [
+            "# Итоговый отчёт AIha Consulting — Industrial AI",
+            "# Итоговый отчет AIha Consulting — Industrial AI",
+        ]
+
+        for business_marker in business_markers:
+            business_pos = markdown.rfind(business_marker)
+
+            if business_pos > 0:
+                for legacy_marker in legacy_markers:
+                    legacy_pos = markdown.find(legacy_marker)
+
+                    if legacy_pos >= 0 and legacy_pos < business_pos:
+                        return markdown[business_pos:].strip()
+
+        return markdown.strip()
+
+    def extract_prompt_json_value(markdown: str, keys: list[str]) -> str:
+        for key in keys:
+            patterns = [
+                rf'"{re.escape(key)}"\s*:\s*"([^"]+)"',
+                rf"'{re.escape(key)}'\s*:\s*'([^']+)'",
+            ]
+
+            for pattern in patterns:
+                match = re.search(pattern, markdown)
+
+                if not match:
+                    continue
+
+                value = match.group(1).strip()
+
+                if is_usable_prompt_value(value):
+                    return value
+
+        return ""
+
+    def extract_prompt_table_value(markdown: str, first_cells: list[str]) -> str:
+        for first_cell in first_cells:
+            pattern = (
+                rf"^\|\s*{re.escape(first_cell)}\s*\|\s*([^|\n]+?)\s*\|"
+            )
+
+            match = re.search(pattern, markdown, flags=re.MULTILINE)
+
+            if not match:
+                continue
+
+            value = match.group(1).strip()
+
+            if is_usable_prompt_value(value):
+                return value
+
+        return ""
+
+    def is_usable_prompt_value(value: str) -> bool:
+        normalized = value.strip().lower()
+
+        if not normalized:
+            return False
+
+        blocked_values = {
+            "none",
+            "null",
+            "unknown",
+            "n/a",
+            "не указано",
+            "неизвестно",
+            "требует уточнения",
+            "частично подтверждено",
+            "—",
+            "-",
+        }
+
+        if normalized in blocked_values:
+            return False
+
+        return True
+
+    def is_likely_action_not_object(value: str) -> bool:
+        normalized = value.strip().lower()
+
+        action_markers = [
+            "мониторинг простоев",
+            "выявление повторяющихся причин",
+            "выявление причин",
+            "анализ исторических данных",
+            "формирование отчет",
+            "формирование отчёт",
+            "dashboard",
+            "дашборд",
+            "отчёт для владельца",
+            "отчет для владельца",
+        ]
+
+        return any(marker in normalized for marker in action_markers)
+
+    def clean_markdown_table_cell(value: str) -> str:
+        cleaned = str(value or "").strip()
+        cleaned = cleaned.replace("\n", " ")
+        cleaned = cleaned.replace("|", "/")
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        return cleaned.strip()
+
+    def get_pilot_object_from_prompt(markdown: str) -> str:
+        table_value = extract_prompt_table_value(
+            markdown,
+            [
+                "Объект пилота",
+                "Пилотный объект",
+                "Объект анализа",
+                "Процесс / объект анализа",
+                "Текущий процесс / объект анализа",
+            ],
+        )
+
+        if table_value and not is_likely_action_not_object(table_value):
+            return clean_markdown_table_cell(table_value)
+
+        json_value = extract_prompt_json_value(
+            markdown,
+            [
+                "pilot_object",
+                "pilot_area",
+                "pilot_line",
+                "production_area",
+                "production_line",
+                "process_object",
+                "object_of_analysis",
+                "target_object",
+                "target_line",
+                "workshop",
+                "shop",
+                "line",
+                "area",
+            ],
+        )
+
+        if json_value and not is_likely_action_not_object(json_value):
+            return clean_markdown_table_cell(json_value)
+
+        return "Пилотная линия / участок, указанные в Industrial AI Brief"
+
+    fixed = remove_legacy_wrapper(fixed)
+    fixed = strip_before_last_business_report(fixed)
+
+    # Если модель всё равно оставила служебную обёртку в начале.
+    fixed = re.sub(
+        r"^\s*#\s*Экспресс-диагностика AIha Consulting\s*"
+        r"(?:\n+##\s*Итоговый диагностический отч[её]т\s*)?",
+        "",
+        fixed,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    # Внутренний статус не должен доминировать в клиентском документе.
+    fixed = fixed.replace(
+        "GO_WITH_CONSTRAINTS",
+        "рекомендуется переходить к подготовительному этапу и MVP-пилоту с ограничениями",
+    )
+
+    fixed = fixed.replace(
+        "Итоговое решение | рекомендуется переходить к подготовительному этапу и MVP-пилоту с ограничениями",
+        "Рекомендация | Перейти к подготовительному этапу и MVP-пилоту с ограничениями по данным, ИБ и подтверждению экономики",
+    )
+
+    # Если файлы уже были приложены / D-001 видел вложения, не просим “передать тестовый файл” как будто его нет.
+    has_attachments = (
+        '"attachments"' in prompt_input
+        or '"attachment' in prompt_input
+        or '"files_count"' in prompt_input
+        or '"minimum_downtime_export_fields_present": true' in prompt_input
+        or '"minimum_downtime_export_fields_present": True' in prompt_input
+    )
+
+    if has_attachments:
+        fixed = fixed.replace(
+            "тестовый файл нужно передать",
+            "требуется подтвердить репрезентативность, стабильность формата и регулярность выгрузки",
+        )
+        fixed = fixed.replace(
+            "Тестовая Excel / CSV выгрузка передана | частично выполнено | Возможность Excel / CSV выгрузки подтверждена, тестовый файл нужно передать",
+            "Тестовая Excel / CSV выгрузка передана | частично выполнено | Файл / пример выгрузки получен; требуется подтвердить репрезентативность, стабильность формата и регулярность выгрузки",
+        )
+        fixed = fixed.replace(
+            "Запросить обезличенные данные и подтвердить идентификаторы",
+            "Подтвердить репрезентативность обезличенной выгрузки, стабильность формата, baseline и правила обработки данных",
+        )
+
+    # Если в prompt есть явные признаки минимальных downtime-полей, формулируем как валидацию, а не отсутствие данных.
+    downtime_fields_present = all(
+        field in prompt_input
+        for field in [
+            "event_id",
+            "line_id",
+            "equipment_id",
+            "start_time",
+            "end_time",
+            "duration_min",
+            "reason_code",
+        ]
+    )
+
+    def replace_table_row_by_first_cell(
+        markdown: str,
+        first_cell: str,
+        replacement_cell: str,
+        *,
+        expected_columns: int = 2,
+        target_column_index: int = 1,
+    ) -> str:
         """
-        Заменяет строку markdown-таблицы по первой ячейке.
-        Это устойчивее, чем полное fixed.replace(), потому что модель
-        часто меняет текст во 2-й и 3-й колонках.
+        Заменяет одну ячейку markdown-таблицы по значению первой ячейки.
+
+        По умолчанию работает для двухколоночных таблиц:
+        | Элемент | Рекомендация |
+
+        Для таблицы этапов:
+        | Этап | Срок | Результат |
+        вызывай с expected_columns=3, target_column_index=2.
+
+        Не добавляет клиентские факты — только нормализует уже сгенерированную строку.
         """
         lines = markdown.splitlines()
-        result_lines: list[str] = []
-
-        prefix = f"| {first_cell} |"
+        fixed_lines: list[str] = []
 
         for line in lines:
-            if line.strip().startswith(prefix):
-                result_lines.append(new_row)
-            else:
-                result_lines.append(line)
+            stripped = line.strip()
 
-        return "\n".join(result_lines)
+            if not stripped.startswith("|") or not stripped.endswith("|"):
+                fixed_lines.append(line)
+                continue
 
-    def collapse_blank_before_table_row(markdown: str, first_cell: str) -> str:
-        """
-        Убирает пустую строку перед добавленной строкой таблицы,
-        чтобы markdown не разбивал одну таблицу на две.
-        """
-        return markdown.replace(
-            f"\n\n| {first_cell} |",
-            f"\n| {first_cell} |",
-        )
+            cells = [
+                cell.strip()
+                for cell in stripped.strip("|").split("|")
+            ]
 
-    # Экономика: эффект только как гипотеза.
-    fixed = replace_table_row_by_first_cell(
-        fixed,
-        "Потенциальный эффект",
-        "| Потенциальный эффект | 20 000–60 000 ₽ в месяц | Предварительная гипотеза 5–10% от месячных потерь, требует проверки на MVP |",
+            if len(cells) != expected_columns:
+                fixed_lines.append(line)
+                continue
+
+            if cells[0] != first_cell:
+                fixed_lines.append(line)
+                continue
+
+            if target_column_index >= len(cells):
+                fixed_lines.append(line)
+                continue
+
+            cells[target_column_index] = replacement_cell
+            fixed_lines.append("| " + " | ".join(cells) + " |")
+
+        return "\n".join(fixed_lines)
+
+    case_profile = build_case_profile(
+        _extract_case_type_from_text(prompt_input)
     )
 
-    fixed = replace_table_row_by_first_cell(
-        fixed,
-        "Что уже подтверждено",
-        "| Что уже подтверждено | Возможность выгрузки данных в Excel / CSV; частично подтверждены данные о событиях простоев. |",
+    case_type = case_profile.get("case_type", "generic_industrial_ai")
+    is_downtime = case_type == "downtime_analysis"
+
+    mvp_focus = case_profile.get(
+        "mvp_focus",
+        "выявление повторяющихся причин / паттернов и ранжирование объектов или факторов по вкладу в проблему",
+    )
+    kpi_language = case_profile.get(
+        "kpi_language",
+        "снижение управляемых потерь, сокращение ручной работы, пригодность данных для регулярного анализа",
+    )
+    effect_name = case_profile.get(
+        "effect_name",
+        "снижение управляемых потерь и сокращение ручного анализа",
+    )
+    data_requirements = case_profile.get(
+        "data_requirements",
+        "ID объекта или события, дата / время, статус, категория, причина / комментарий, экономический показатель",
     )
 
-    # Не писать "после подтверждения эффекта" — эффект не подтверждается заранее.
-    fixed = fixed.replace(
-        "Масштабирование после подтверждения эффекта",
-        "Масштабирование после проверки ценности MVP",
+    downtime_fields_present = is_downtime and all(
+        field in prompt_input
+        for field in [
+            "event_id",
+            "line_id",
+            "equipment_id",
+            "start_time",
+            "end_time",
+            "duration_min",
+            "reason_code",
+        ]
     )
 
-    fixed = fixed.replace(
-        "после подтверждения эффекта",
-        "после проверки ценности MVP",
-    )
-
-    fixed = fixed.replace(
-        "После подтверждения успешности MVP и согласования условий.",
-        "После проверки ценности MVP, готовности данных, ИБ и интеграционных ограничений.",
-    )
-
-    fixed = fixed.replace(
-        "После подтверждения ценности MVP и наличия необходимых данных.",
-        "После проверки ценности MVP, готовности данных, ИБ и интеграционных ограничений.",
-    )
-
-    fixed = fixed.replace(
-        "| Интеграции и масштабирование | Масштабирование после проверки ценности MVP | отдельно после MVP | — |",
-        "| Интеграции и масштабирование | Масштабирование после проверки ценности MVP | отдельно после MVP | Оценивается отдельным этапом |",
-    )
-
-    fixed = fixed.replace(
-        "| Интеграции | Масштабирование после проверки ценности MVP | отдельно | — |",
-        "| Интеграции | Масштабирование после проверки ценности MVP | отдельно | Оценивается отдельным этапом |",
-    )
-
-    # Scope exclusions.
-    fixed = replace_table_row_by_first_cell(
-        fixed,
-        "Автономное управление оборудованием",
-        "| Автономное управление оборудованием | MVP не управляет оборудованием и не принимает автономные производственные решения. |",
-    )
-
-    fixed = replace_table_row_by_first_cell(
-        fixed,
-        "Полная интеграция со всеми системами",
-        "| Полная интеграция со всеми системами | Регулярные интеграции оцениваются отдельно после MVP. |",
-    )
-
-    fixed = replace_table_row_by_first_cell(
-        fixed,
-        "Real-time контур",
-        "| Real-time контур | Не входит в первый этап и требует отдельной технической и ИБ-оценки. |",
-    )
-
-    fixed = replace_table_row_by_first_cell(
-        fixed,
-        "Production-grade эксплуатация",
-        "| Production-grade эксплуатация | Требует отдельного этапа после MVP и отдельного согласования. |",
-    )
-
-    # Добавляем недостающие исключения scope перед блоком "Может быть добавлено после MVP".
-    if "### Может быть добавлено после MVP" in fixed:
-        exclusion_rows: list[str] = []
-
-        if "| Real-time контур |" not in fixed:
-            exclusion_rows.append(
-                "| Real-time контур | Не входит в первый этап и требует отдельной технической и ИБ-оценки. |"
-            )
-
-        if "| Замена ERP / MES / SCADA |" not in fixed:
-            exclusion_rows.append(
-                "| Замена ERP / MES / SCADA | Существующие системы не заменяются в рамках MVP; возможны выгрузки или отдельные интеграции после MVP. |"
-            )
-
-        if "| Production-grade эксплуатация |" not in fixed:
-            exclusion_rows.append(
-                "| Production-grade эксплуатация | Требует отдельного этапа после MVP и отдельного согласования. |"
-            )
-
-        if exclusion_rows:
-            fixed = fixed.replace(
-                "\n### Может быть добавлено после MVP",
-                "\n" + "\n".join(exclusion_rows) + "\n\n### Может быть добавлено после MVP",
-                1,
-            )
-
-    # Scope "Входит": добавить MVP-артефакты, если модель оставила только подготовку.
-    if "| AI-анализ / dashboard |" not in fixed and "### Не входит" in fixed:
+    if downtime_fields_present:
         fixed = fixed.replace(
-            "\n### Не входит",
-            "\n| AI-анализ / dashboard | Анализ событий простоев, повторяющихся причин и подготовка отчёта / dashboard для владельца процесса. |\n"
-            "| Human-in-the-loop проверка | Проверка рекомендаций руководителем производства или назначенным экспертом. |\n\n"
-            "### Не входит",
-            1,
+            "Требуется уточнение идентификаторов и временных меток",
+            "Ключевые поля представлены в тестовой структуре; требуется подтвердить их стабильность в регулярных выгрузках",
         )
-
-    # Ответственность клиента.
-    if "| Назначить производственного эксперта |" not in fixed and "## 9. Ответственность AIha Consulting" in fixed:
         fixed = fixed.replace(
-            "\n---\n\n## 9. Ответственность AIha Consulting",
-            "\n| Назначить производственного эксперта | Для проверки причин простоев и валидации рекомендаций |\n"
-            "| Назначить ИТ / OT-контакт | Для проверки выгрузки, формата данных, доступности 1C / MES / SCADA / OEE и инфраструктурных ограничений |\n\n"
-            "---\n\n## 9. Ответственность AIha Consulting",
-            1,
+            "Неполные данные и отсутствие необходимых идентификаторов",
+            "Требуется подтвердить стабильность идентификаторов, временных меток, baseline и регулярность выгрузки",
         )
-
-    # Ответственность AIha Consulting.
-    if "## 10. Риски и ограничения" in fixed:
-        aiha_rows: list[str] = []
-
-        if "| Не заменяет ERP / MES / SCADA |" not in fixed:
-            aiha_rows.append(
-                "| Не заменяет ERP / MES / SCADA | Существующие системы остаются источниками данных или объектами отдельных интеграций после MVP |"
-            )
-
-        if "| Не гарантирует экономический эффект |" not in fixed:
-            aiha_rows.append(
-                "| Не гарантирует экономический эффект | Эффект проверяется как гипотеза MVP после фиксации baseline |"
-            )
-
-        if "| Не запускает real-time / production-grade контур |" not in fixed:
-            aiha_rows.append(
-                "| Не запускает real-time / production-grade контур | Эти работы требуют отдельной технической и ИБ-оценки |"
-            )
-
-        if aiha_rows:
-            fixed = fixed.replace(
-                "\n---\n\n## 10. Риски и ограничения",
-                "\n" + "\n".join(aiha_rows) + "\n\n---\n\n## 10. Риски и ограничения",
-                1,
-            )
-
-    # Риски D-004.
-    additional_risk_rows: list[str] = []
-
-    if "| ИБ / коммерческая тайна |" not in fixed:
-        additional_risk_rows.append(
-            "| ИБ / коммерческая тайна | Без согласованных правил передачи, хранения, удаления и локальной обработки нельзя запускать MVP | Согласовать NDA и правила обработки данных до передачи тестовой выгрузки |"
-        )
-
-    if "| Неподтверждённый baseline |" not in fixed:
-        additional_risk_rows.append(
-            "| Неподтверждённый baseline | Нельзя корректно оценить экономический эффект MVP | Зафиксировать baseline, количество событий, среднюю длительность простоя и стоимость часа простоя |"
-        )
-
-    if "| Ошибочное ожидание real-time или автоматического управления |" not in fixed:
-        additional_risk_rows.append(
-            "| Ошибочное ожидание real-time или автоматического управления | Может привести к неверному scope и рискам производственной безопасности | Зафиксировать, что MVP не управляет оборудованием и работает только с human-in-the-loop проверкой |"
-        )
-
-    if "| Недоверие производственных экспертов к рекомендациям AI |" not in fixed:
-        additional_risk_rows.append(
-            "| Недоверие производственных экспертов к рекомендациям AI | Рекомендации могут не использоваться в процессе | Назначить производственного эксперта и валидировать выводы на исторических данных |"
-        )
-
-    if "| Доступность 1C / MES / SCADA / OEE для регулярной выгрузки |" not in fixed:
-        additional_risk_rows.append(
-            "| Доступность 1C / MES / SCADA / OEE для регулярной выгрузки | Частичный статус источников может ограничить регулярность анализа | Начать с Excel / CSV, проверить доступность источников на подготовительном этапе, интеграции оценивать отдельно после MVP |"
-        )
-
-    if additional_risk_rows and "## 11. Критерии успеха MVP" in fixed:
         fixed = fixed.replace(
-            "\n---\n\n## 11. Критерии успеха MVP",
-            "\n" + "\n".join(additional_risk_rows) + "\n\n---\n\n## 11. Критерии успеха MVP",
-            1,
+            "Подтвердить наличие стабильного ID события простоя или правило его формирования",
+            "Проверить на тестовой выгрузке и зафиксировать правило формирования ID события простоя",
+        )
+        fixed = fixed.replace(
+            "Начало простоя подтверждено, конец или длительность нужно проверить на тестовой выгрузке",
+            "Начало, конец и длительность представлены в тестовой структуре; требуется подтвердить единый формат времени и timezone в регулярных выгрузках",
         )
 
-    # Клиентская формулировка вместо внутренних статусов.
+    # Экономика должна оставаться гипотезой до baseline.
+    fixed = fixed.replace(
+        "Подтвержденная экономика",
+        "Предварительная гипотеза, требует подтверждения baseline",
+    )
+    fixed = fixed.replace(
+        "Подтверждённая экономика",
+        "Предварительная гипотеза, требует подтверждения baseline",
+    )
+    fixed = fixed.replace(
+        "может привести к значительной экономии.",
+        "рассматривается как предварительная гипотеза; точный экономический эффект фиксируется после подтверждения baseline.",
+    )
+
+    fixed = fixed.replace(
+        "Бюджет обсуждается после подтверждения экономики.",
+        "Ориентир бюджета: подготовительный этап — 150 000–300 000 ₽; MVP-пилот — 500 000–1 200 000 ₽. Финальная цена фиксируется после подтверждения scope, данных, ИБ, критериев успеха и формата следующего этапа.",
+    )
+    fixed = fixed.replace(
+        "Ориентир бюджета фиксируется после подтверждения scope, данных, ИБ, критериев успеха и формата следующего этапа.",
+        "Ориентир бюджета: подготовительный этап — 150 000–300 000 ₽; MVP-пилот — 500 000–1 200 000 ₽. Финальная цена фиксируется после подтверждения scope, данных, ИБ, критериев успеха и формата следующего этапа.",
+    )
+
+    # Клиентский стиль: меньше шаблонности, больше консалтинговой конкретики.
+    fixed = fixed.replace(
+        "В данном отчёте рассматривается кейс",
+        "Мы видим прикладной AI-кейс",
+    )
+    fixed = fixed.replace(
+        "В данном отчете рассматривается кейс",
+        "Мы видим прикладной AI-кейс",
+    )
+    fixed = fixed.replace(
+        "Внедрение ИИ может привести к следующим потенциальным выигрышам:",
+        "AI-пилот позволит проверить следующие источники бизнес-выигрыша:",
+    )
+    fixed = fixed.replace(
+        "Внедрение ИИ может потенциально привести к следующим эффектам:",
+        "AI-пилот позволит проверить следующие источники бизнес-выигрыша:",
+    )
+    fixed = fixed.replace(
+        "Внедрение ИИ может потенциально привести к следующим выигрышам:",
+        "AI-пилот позволит проверить следующие источники бизнес-выигрыша:",
+    )
+    fixed = fixed.replace(
+        "Внедрение ИИ может привести к следующим эффектам:",
+        "AI-пилот позволит проверить следующие источники бизнес-выигрыша:",
+    )
+    fixed = fixed.replace(
+        "Внедрение ИИ даст клиенту следующие конкурентные преимущества:",
+        "Практический конкурентный выигрыш для клиента:",
+    )
+    fixed = fixed.replace(
+        "Внедрение ИИ предоставит клиенту следующие конкурентные преимущества:",
+        "Практический конкурентный выигрыш для клиента:",
+    )
+
+    fixed = re.sub(
+        r"(?:внедрение|Внедрение) ИИ может значительно [^.]+?\.",
+        f"AI-пилот позволит проверить {effect_name} после подтверждения baseline.",
+        fixed,
+    )
+
+    fixed = fixed.replace(
+        "значительно повысить эффективность работы",
+        "проверить потенциал повышения управляемости и сокращения потерь",
+    )
+
+    # Не используем слабую формулировку “уточнить у клиента”.
+    fixed = fixed.replace(
+        "Уточнить у клиента",
+        "Проверить и зафиксировать на подготовительном этапе",
+    )
+    fixed = fixed.replace(
+        "уточнить у клиента",
+        "проверить и зафиксировать на подготовительном этапе",
+    )
+    fixed = fixed.replace(
+        "Уточнить у финансового блока",
+        "Проверить и согласовать с финансовым блоком",
+    )
+    fixed = fixed.replace(
+        "уточнить у финансового блока",
+        "проверить и согласовать с финансовым блоком",
+    )
+
+    # Для AIha Consulting не нужна “полная выгрузка”; нужна ограниченная репрезентативная выборка.
+    fixed = fixed.replace(
+        "Полная выгрузка данных",
+        "Ограниченная обезличенная выгрузка за согласованный период",
+    )
+    fixed = fixed.replace(
+        "полная выгрузка данных",
+        "ограниченная обезличенная выгрузка за согласованный период",
+    )
+    fixed = fixed.replace(
+        "полную выгрузку данных",
+        "ограниченную обезличенную выгрузку за согласованный период",
+    )
+
+    # Коммерческий блок: результат должен звучать как продаваемый outcome, а не как техническая активность.
+    fixed = fixed.replace(
+        "Рабочий прототип",
+        "MVP-артефакт",
+    )
+    fixed = fixed.replace(
+        "рабочий прототип",
+        "MVP-артефакт",
+    )
+    fixed = fixed.replace(
+        "Формирование отчетов",
+        "Подготовка управленческого отчёта",
+    )
+    fixed = fixed.replace(
+        "Формирование отчётов",
+        "Подготовка управленческого отчёта",
+    )
+    fixed = fixed.replace(
+        "Формирование отчетов.",
+        "Подготовка управленческого отчёта.",
+    )
+    fixed = fixed.replace(
+        "формирование отчетов",
+        "подготовка управленческого отчёта",
+    )
+    fixed = fixed.replace(
+        "формирование отчётов",
+        "подготовка управленческого отчёта",
+    )
+    fixed = fixed.replace(
+        "Формирование отчёта для владельца процесса.",
+        "Подготовка управленческого отчёта / dashboard для владельца процесса.",
+    )
+    fixed = fixed.replace(
+        "Формирование отчета для владельца процесса.",
+        "Подготовка управленческого отчёта / dashboard для владельца процесса.",
+    )
+
+    # Downtime-specific нормализация — только для кейса простоев.
+    if is_downtime:
+        fixed = fixed.replace(
+            "что приведет к экономии на простоях",
+            "при подтверждении baseline может дать экономический эффект за счёт снижения управляемых потерь",
+        )
+        fixed = fixed.replace(
+            "что приведёт к экономии на простоях",
+            "при подтверждении baseline может дать экономический эффект за счёт снижения управляемых потерь",
+        )
+        fixed = fixed.replace(
+            "Снижение затрат на простои и ремонты.",
+            "Снижение управляемых потерь после подтверждения baseline.",
+        )
+        fixed = fixed.replace(
+            "Ускорение анализа причин простоев и принятия решений о ремонте.",
+            "Более быстрое выявление повторяющихся причин и приоритетных зон для управленческих действий.",
+        )
+        fixed = fixed.replace(
+            "Повышение стабильности работы оборудования за счёт выявления повторяющихся проблем.",
+            "Повышение стабильности процесса за счёт раннего выявления повторяющихся причин потерь.",
+        )
+        fixed = fixed.replace(
+            "Улучшение контроля над процессами и уменьшение зависимости от ручного ввода данных.",
+            "Повышение управляемости: меньше зависимости от ручных журналов, разрозненных файлов и экспертной памяти.",
+        )
+        fixed = fixed.replace(
+            "Анализ исторических данных о простоях.",
+            "Проверка структуры исторических данных и расчёт baseline-гипотезы.",
+        )
+        fixed = fixed.replace(
+            "Выявление причин отказов.",
+            "AI-анализ повторяющихся причин и ранжирование объектов / факторов по вкладу в проблему.",
+        )
+
+        fixed = re.sub(
+            r"Потенциальное снижение простоев на ([^.\n]+?) может сэкономить значительные средства\.",
+            r"Потенциальное снижение простоев на \1 рассматривается как предварительная гипотеза; точный экономический эффект фиксируется после подтверждения baseline.",
+            fixed,
+        )
+        fixed = re.sub(
+            r"Снижение простоев на ([^.\n]+?) может сэкономить значительные средства\.",
+            r"Снижение простоев на \1 рассматривается как предварительная гипотеза; точный экономический эффект фиксируется после подтверждения baseline.",
+            fixed,
+        )
+
+        fixed = fixed.replace(
+            "| Неполные данные | Отсутствие необходимых идентификаторов и временных меток может затруднить анализ. | Проверить и зафиксировать на подготовительном этапе. |",
+            "| Неполные данные | Отсутствие стабильных идентификаторов и единых временных меток может затруднить расчёт baseline и анализ повторяющихся причин. | Проверить тестовую выгрузку, зафиксировать обязательные поля и правила формирования ID событий. |",
+        )
+
+    # Если модель ошибочно записала функцию MVP в строку "Объект пилота",
+    # заменяем её на объект из prompt_input или безопасный универсальный fallback.
+    pilot_object = get_pilot_object_from_prompt(prompt_input)
+
+    fixed = re.sub(
+        r"\|\s*Объект пилота\s*\|\s*Мониторинг простоев[^|\n]*\|",
+        f"| Объект пилота | {pilot_object} |",
+        fixed,
+    )
+    fixed = re.sub(
+        r"\|\s*Объект пилота\s*\|\s*Анализ простоев[^|\n]*\|",
+        f"| Объект пилота | {pilot_object} |",
+        fixed,
+    )
+
+    # Универсальная полировка строк MVP через case_profile.
     fixed = replace_table_row_by_first_cell(
         fixed,
-        "Готовность к масштабированию",
-        "| Готовность к масштабированию | Результат MVP-пилота | Рекомендация: масштабировать, масштабировать с ограничениями или не масштабировать |",
+        "Что входит",
+        f"Проверка структуры данных, {mvp_focus}, dashboard / управленческий отчёт для владельца процесса.",
+    )
+
+    fixed = replace_table_row_by_first_cell(
+        fixed,
+        "KPI успеха",
+        f"Проверить {kpi_language}; точные KPI фиксируются после baseline.",
+    )
+
+    fixed = replace_table_row_by_first_cell(
+        fixed,
+        "MVP-пилот",
+        f"MVP-артефакт: dashboard / аналитический отчёт / {mvp_focus}",
+        expected_columns=3,
+        target_column_index=2,
+    )
+
+    fixed = replace_table_row_by_first_cell(
+        fixed,
+        "Подготовка данных",
+        "Согласованная обезличенная выгрузка, правила ИБ и критерии успеха",
+        expected_columns=3,
+        target_column_index=2,
+    )
+
+    fixed = replace_table_row_by_first_cell(
+        fixed,
+        "Тестирование",
+        "Проверка качества, стабильности формата и применимости данных для MVP",
+        expected_columns=3,
+        target_column_index=2,
+    )
+
+    # Чистим дубли без добавления новых клиентских фактов.
+    fixed = fixed.replace(
+        "dashboard / аналитический отчёт / список повторяющихся причин, отчёт",
+        "dashboard / аналитический отчёт / список повторяющихся причин",
+    )
+    fixed = fixed.replace(
+        "dashboard / аналитический отчет / список повторяющихся причин, отчет",
+        "dashboard / аналитический отчет / список повторяющихся причин",
+    )
+    fixed = fixed.replace(
+        "dashboard / аналитический отчёт / список повторяющихся причин / dashboard / отчёт",
+        "dashboard / аналитический отчёт / список повторяющихся причин",
+    )
+    fixed = fixed.replace(
+        "dashboard / аналитический отчет / список повторяющихся причин / dashboard / отчет",
+        "dashboard / аналитический отчет / список повторяющихся причин",
+    )
+    fixed = fixed.replace(
+        "MVP-артефакт, отчёт",
+        f"MVP-артефакт: dashboard / аналитический отчёт / {mvp_focus}",
+    )
+    fixed = fixed.replace(
+        "MVP-артефакт, отчет",
+        f"MVP-артефакт: dashboard / аналитический отчёт / {mvp_focus}",
+    )
+
+    # Уточняем следующий шаг: не просто “получить данные”, а согласовать business/data gate.
+    fixed = fixed.replace(
+        "Для этого необходимо получить ограниченную обезличенную выгрузку данных и подтвердить идентификаторы.",
+        "Для этого необходимо согласовать ограниченную обезличенную выгрузку за выбранный период, подтвердить идентификаторы, baseline и критерии успеха MVP.",
+    )
+    fixed = fixed.replace(
+        "Для этого нам потребуется получить ограниченную обезличенную выгрузку данных и согласовать условия обработки.",
+        "Для этого необходимо согласовать ограниченную обезличенную выгрузку за выбранный период, критерии успеха MVP и правила обработки данных.",
+    )
+    fixed = fixed.replace(
+        "получение ограниченной обезличенной выгрузки данных",
+        "согласование ограниченной обезличенной выгрузки за выбранный период",
+    )
+    fixed = fixed.replace(
+        "Обезличенные данные.",
+        "Ограниченная обезличенная выгрузка за согласованный период.",
+    )
+    fixed = fixed.replace(
+        "Обезличенные данные для анализа.",
+        "Ограниченная обезличенная выгрузка за согласованный период.",
+    )
+    fixed = fixed.replace(
+        "Обезличенные данные, подтверждение стабильности идентификаторов, согласование NDA.",
+        "Ограниченная обезличенная выгрузка за согласованный период, подтверждение стабильности идентификаторов, baseline и правил обработки данных.",
+    )
+    fixed = fixed.replace(
+        "Подтверждение идентификаторов и временных меток.",
+        "Подтверждение идентификаторов, временных меток, baseline и правил обработки данных.",
+    )
+    fixed = fixed.replace(
+        "Подтверждение стоимости часа простоя.",
+        "Подтверждение baseline, стоимости потерь и правил обработки данных.",
+    )
+    fixed = fixed.replace(
+        "Подтверждение стоимости часа простоя",
+        "Подтверждение baseline, стоимости потерь и правил обработки данных",
+    )
+
+    # В клиентском сообщении требования к данным должны быть универсальными.
+    fixed = fixed.replace(
+        "Готовы согласовать состав обезличенной выгрузки, критерии успеха MVP и формат подготовительного этапа.",
+        "Готовы согласовать состав обезличенной выгрузки, критерии успеха MVP и формат подготовительного этапа.",
+    )
+
+    # Следующий коммерческий шаг: не повторный анализ, а переход к MVP.
+    fixed = fixed.replace(
+        "## 9. Коммерческое предложение",
+        "## 9. Возможный следующий коммерческий этап",
     )
 
     fixed = fixed.replace(
-        "Если baseline не указан, в критериях и экономике пишите:",
-        "Если baseline не указан, в критериях и экономике указывается:",
+        "### 9.1. Что предлагаем",
+        "### 9.1. Что предлагаем дальше",
     )
 
     fixed = fixed.replace(
-        "Ждем вашего ответа.",
-        "Готовы согласовать подготовительный этап и список данных для первой тестовой выгрузки.",
+        "- Анализ данных о простоях и выявление причин отказов.",
+        "- Data & Scope Gate перед MVP: подтверждение scope, состава данных, ИБ, baseline и критериев успеха MVP.",
     )
 
     fixed = fixed.replace(
-        "Ждём вашего ответа.",
-        "Готовы согласовать подготовительный этап и список данных для первой тестовой выгрузки.",
+        "- Анализ простоев на производственной линии с целью выявления причин и уменьшения потерь.",
+        "- Data & Scope Gate перед MVP: подтверждение scope, состава данных, ИБ, baseline и критериев успеха MVP.",
     )
 
     fixed = fixed.replace(
-        "Для этого потребуется от вас передать тестовую Excel / CSV выгрузку и подтвердить ID событий, оборудования и линии. Результатом станет подготовка данных для анализа и выявление причин простоев.",
-        "Для этого потребуется передать тестовую Excel / CSV выгрузку, подтвердить ID событий, оборудования и линии, согласовать baseline и правила обработки данных. Результатом станет подготовка данных для MVP-пилота и проверка гипотезы снижения простоев.",
+        "- Проведение анализа простоев на пилотной линии с использованием ИИ.",
+        "- Data & Scope Gate перед MVP: подтверждение scope, состава данных, ИБ, baseline и критериев успеха MVP.",
     )
 
     fixed = fixed.replace(
-        "Для этого потребуется от вас передать тестовую Excel / CSV выгрузку и подтвердить ID событий, оборудования и линии.",
-        "Для этого потребуется передать тестовую Excel / CSV выгрузку, подтвердить ID событий, оборудования и линии, согласовать baseline и правила обработки данных.",
+        "### 9.2. Что входит",
+        "### 9.2. Что входит в Data & Scope Gate",
     )
 
     fixed = fixed.replace(
-        "Для этого потребуется от вас передать тестовую Excel/CSV выгрузку и подтвердить ID событий, оборудования и линии.",
-        "Для этого потребуется передать тестовую Excel / CSV выгрузку, подтвердить ID событий, оборудования и линии, согласовать baseline и правила обработки данных.",
+        "- AI-анализ повторяющихся причин.",
+        "- Проверка пригодности данных для MVP без глубокой BI-аналитики.",
     )
 
     fixed = fixed.replace(
-        "Для этого потребуется от вас передать тестовую выгрузку и подтвердить ID событий, оборудования и линии.",
-        "Для этого потребуется передать тестовую Excel / CSV выгрузку, подтвердить ID событий, оборудования и линии, согласовать baseline и правила обработки данных.",
+        "- Dashboard / отчёт для владельца процесса.",
+        "- Фиксация MVP scope, критериев успеха и требований к обезличенной выгрузке.",
     )
 
     fixed = fixed.replace(
-        "| Интеграция с MES/SCADA | После подтверждения эффективности MVP и наличия необходимых данных. |",
-        "| Интеграция с MES/SCADA | После проверки ценности MVP, готовности данных, ИБ и интеграционных ограничений. |",
+        "- Подготовка управленческого отчёта / dashboard для владельца процесса.",
+        "- Фиксация MVP scope, критериев успеха и требований к обезличенной выгрузке.",
     )
 
     fixed = fixed.replace(
-        "Для этого необходимо получить ограниченную обезличенную выгрузку данных, проверить ID событий, оборудования и линии, а также согласовать baseline. Это позволит перейти к следующему этапу — MVP-пилоту, который поможет проверить гипотезу снижения простоев и выявить повторяющиеся причины отказов.",
-        "Для этого необходимо получить ограниченную обезличенную выгрузку данных, проверить ID событий, оборудования и линии, согласовать baseline и правила обработки данных. Это позволит перейти к следующему этапу — MVP-пилоту, который проверит гипотезу снижения простоев и поможет выявить повторяющиеся причины отказов.",
+        "### 9.4. Сроки",
+        "### 9.4. Сроки следующего этапа",
     )
 
-    fixed = fixed.replace("| HIGH |", "| Высокое |")
-    fixed = fixed.replace("| MEDIUM |", "| Среднее |")
-    fixed = fixed.replace("| LOW |", "| Низкое |")
+    fixed = fixed.replace(
+        "- Подготовительный этап: 3–5 рабочих дней.",
+        "- Data & Scope Gate перед MVP: 3–5 рабочих дней.",
+    )
 
-    # Финальный markdown cleanup: добавленные строки должны оставаться внутри таблиц.
-    for first_cell in [
-        "AI-анализ / dashboard",
-        "Human-in-the-loop проверка",
-        "Real-time контур",
-        "Замена ERP / MES / SCADA",
-        "Production-grade эксплуатация",
-        "Назначить производственного эксперта",
-        "Назначить ИТ / OT-контакт",
-        "Не заменяет ERP / MES / SCADA",
-        "Не гарантирует экономический эффект",
-        "Не запускает real-time / production-grade контур",
-        "ИБ / коммерческая тайна",
-        "Неподтверждённый baseline",
-        "Ошибочное ожидание real-time или автоматического управления",
-        "Недоверие производственных экспертов к рекомендациям AI",
-        "Доступность 1C / MES / SCADA / OEE для регулярной выгрузки",
-    ]:
-        fixed = collapse_blank_before_table_row(fixed, first_cell)
+    fixed = fixed.replace(
+        "- Подготовка данных: 3–5 рабочих дней.",
+        "- Data & Scope Gate перед MVP: 3–5 рабочих дней.",
+    )
+
+    fixed = fixed.replace(
+        "- MVP-пилот: 10–15 рабочих дней.",
+        "- MVP-пилот: 10–15 рабочих дней после подтверждения данных, ИБ и критериев успеха.",
+    )
+
+    fixed = fixed.replace(
+        "### 9.5. Бюджетный ориентир",
+        "### 9.5. Бюджетный ориентир следующего этапа",
+    )
+
+    fixed = fixed.replace(
+        "- Подготовительный этап: 150 000–300 000 ₽.",
+        "- Data & Scope Gate перед MVP: 150 000–300 000 ₽.",
+    )
+
+    fixed = fixed.replace(
+        "Ориентир бюджета: подготовительный этап — 150 000–300 000 ₽; MVP-пилот — 500 000–1 200 000 ₽.",
+        "Ориентир бюджета: Data & Scope Gate перед MVP — 150 000–300 000 ₽; MVP-пилот — 500 000–1 200 000 ₽.",
+    )
+
+    fixed = fixed.replace(
+        "Финальная цена фиксируется после подтверждения scope, данных, ИБ и критериев успеха.",
+        "Финальная цена фиксируется после подтверждения scope, состава данных, правил ИБ, критериев успеха и формата MVP.",
+    )
+
+    fixed = fixed.replace(
+        "Финальная цена фиксируется после подтверждения scope, данных, ИБ, критериев успеха и формата следующего этапа.",
+        "Финальная цена фиксируется после подтверждения scope, состава данных, правил ИБ, критериев успеха и формата MVP.",
+    )
+
+    fixed = fixed.replace(
+        "### 9.6. Что потребуется от клиента",
+        "### 9.6. Что потребуется от клиента для следующего этапа",
+    )
+
+    fixed = fixed.replace(
+        "- Обезличенная выгрузка данных.",
+        "- Ограниченная обезличенная выгрузка за согласованный период.",
+    )
+
+    fixed = fixed.replace(
+        "- Подтверждение baseline, стоимости потерь и правил обработки данных и стабильности идентификаторов.",
+        "- Подтверждение baseline, стоимости потерь, стабильности идентификаторов и правил обработки данных.",
+    )
+
+    # Финальная case-aware полировка.
+    fixed = fixed.replace(
+        "Рассмотрен кейс",
+        "Мы видим прикладной AI-кейс",
+    )
+
+    fixed = fixed.replace(
+        "автоматизация мониторинга простоев и выявление причин отказов могут существенно снизить потери и повысить эффективность",
+        "AI-пилот позволит проверить потенциал снижения управляемых потерь, сокращения ручного анализа и ускорения принятия решений после подтверждения baseline",
+    )
+
+    fixed = fixed.replace(
+        "автоматизация мониторинга простоев и выявление причин отказов могут значительно снизить потери и повысить эффективность",
+        "AI-пилот позволит проверить потенциал снижения управляемых потерь, сокращения ручного анализа и ускорения принятия решений после подтверждения baseline",
+    )
+
+    fixed = re.sub(
+        r"\|\s*Количество событий простоев\s*\|\s*([^|\n]+?)\s*\|\s*Подтверждено\s*\|",
+        r"| Количество событий простоев | \1 | Предварительно указано; требует подтверждения на baseline |",
+        fixed,
+    )
+
+    fixed = re.sub(
+        r"\|\s*Количество событий простоев\s*\|\s*([^|\n]+?)\s*\|\s*Подтверждено\s*\|",
+        r"| Количество событий простоев | \1 | Предварительно указано; требует подтверждения на baseline |",
+        fixed,
+    )
+
+    fixed = replace_table_row_by_first_cell(
+        fixed,
+        "Тестирование и корректировка",
+        "Проверка качества, стабильности формата и применимости данных для MVP",
+        expected_columns=3,
+        target_column_index=2,
+    )
+
+    fixed = fixed.replace(
+        "Для этого необходимо получить ограниченную обезличенную выгрузку данных и подтвердить ключевые параметры.",
+        "Для этого необходимо согласовать ограниченную обезличенную выгрузку за выбранный период, подтвердить baseline, ключевые идентификаторы и критерии успеха MVP.",
+    )
+
+    fixed = fixed.replace(
+        "Обезличенная выгрузка данных.",
+        "Ограниченная обезличенная выгрузка за согласованный период.",
+    )
+
+    fixed = fixed.replace(
+        "Подтверждение baseline, стоимости потерь и правил обработки данных и стабильности идентификаторов.",
+        "Подтверждение baseline, стоимости потерь, стабильности идентификаторов и правил обработки данных.",
+    )
+
+    # Убрать эмоциональный CTA, если модель его вернула.
+    fixed = fixed.replace(
+        "С нетерпением ждем вашего ответа!",
+        "Готовы согласовать состав обезличенной выгрузки, критерии успеха MVP и формат подготовительного этапа.",
+    )
+    fixed = fixed.replace(
+        "С нетерпением ждём вашего ответа!",
+        "Готовы согласовать состав обезличенной выгрузки, критерии успеха MVP и формат подготовительного этапа.",
+    )
+
+    # Если модель вернула две одинаковые горизонтальные линии подряд / лишние пустоты.
+    fixed = re.sub(r"\n{3,}", "\n\n", fixed).strip()
 
     return fixed
-
 
 def run_d004_commercial_proposal(
     diagnostic_run_id: int,

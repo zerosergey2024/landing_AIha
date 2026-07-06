@@ -17,3 +17,24 @@ backups/
 _backups/
 uploads/*
 !uploads/.gitkeep
+# Local environment
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Local backups / exports
+_backups/
+backups/
+exports/
+*.bak
+*.backup
+
+# Uploaded diagnostic files
+uploads/diagnostics/*
+!uploads/diagnostics/.gitkeep

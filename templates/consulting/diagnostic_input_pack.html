@@ -756,26 +756,93 @@
       </section>
 
       <section class="form-section">
-        <h2>9. Материалы и файлы</h2>
-        <p class="section-hint">
-          Приложите доступные материалы: Excel-журнал заявок, регламент,
-          описание систем, интеграций/API, политики ИБ, NDA, метрики процесса.
-        </p>
+  <h2>9. Материалы и файлы</h2>
+  <p class="section-hint">
+    Приложите доступные материалы: Excel-журнал заявок, регламент,
+    описание систем, интеграций/API, политики ИБ, NDA, метрики процесса.
+  </p>
 
-        <div class="form-field full">
-          <label for="attachments">Файлы</label>
-          <input
-            type="file"
-            id="attachments"
-            name="attachments"
-            multiple
-            accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-          >
-          <p class="small-note">
-            Допустимые форматы: xlsx, xls, csv, pdf, doc, docx, txt, png, jpg, jpeg.
-          </p>
-        </div>
-      </section>
+  {% set attachments_list = existing_attachments | default([], true) %}
+
+  {% if attachments_list %}
+    <div class="form-field full">
+      <label>Уже загруженные материалы</label>
+
+      <p class="small-note">
+        Эти файлы уже привязаны к текущему Diagnostic Input Pack.
+        Поле выбора файла ниже не заполняется автоматически по ограничениям браузера.
+        Чтобы добавить новые материалы, выберите их ниже и сохраните форму.
+      </p>
+
+      <div style="overflow-x: auto; margin-top: 12px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <thead>
+            <tr>
+              <th style="text-align: left; padding: 10px; border-bottom: 1px solid #d0d7de;">
+                Файл
+              </th>
+              <th style="text-align: left; padding: 10px; border-bottom: 1px solid #d0d7de;">
+                Тип
+              </th>
+              <th style="text-align: left; padding: 10px; border-bottom: 1px solid #d0d7de;">
+                Дата загрузки
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for attachment in attachments_list %}
+              <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+                  {{ attachment.original_filename or "—" }}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+                  {{ attachment.file_type or "—" }}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+                  {{ attachment.uploaded_at or "—" }}
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #edf2f7;">
+  <form
+    method="post"
+    action="{{ url_for('diagnostic.delete_attachment', token=token, attachment_id=attachment.id) }}"
+    onsubmit="return confirm('Удалить этот файл?');"
+    style="display: inline;"
+  >
+    <button type="submit" class="button secondary">
+      Удалить
+    </button>
+  </form>
+</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="form-field full">
+      <label>Уже загруженные материалы</label>
+      <p class="small-note">
+        Пока к этому Diagnostic Input Pack не привязаны файлы.
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="form-field full">
+    <label for="attachments">Добавить новые файлы</label>
+    <input
+      type="file"
+      id="attachments"
+      name="attachments"
+      multiple
+      accept=".xlsx,.xls,.csv,.pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+    >
+    <p class="small-note">
+      Допустимые форматы: xlsx, xls, csv, pdf, doc, docx, txt, png, jpg, jpeg.
+      Новые файлы будут добавлены к уже загруженным материалам.
+    </p>
+  </div>
+</section>
 
       <section class="form-section">
         <h2>10. Контакты для уточнений</h2>
@@ -851,5 +918,88 @@
 
     </form>
   </main>
+  <script>
+    window.aihaDiagnosticInputPackFormData = {{ form_data | default({}, true) | tojson | safe }};
+
+    function flattenDiagnosticInputPackPayload(value, result = {}) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return result;
+      }
+
+      Object.keys(value).forEach(function (key) {
+        const item = value[key];
+
+        if (
+          item &&
+          typeof item === "object" &&
+          !Array.isArray(item)
+        ) {
+          flattenDiagnosticInputPackPayload(item, result);
+          return;
+        }
+
+        result[key] = item;
+      });
+
+      return result;
+    }
+
+    function applyDiagnosticInputPackFormData() {
+      const rawData = window.aihaDiagnosticInputPackFormData || {};
+      const flatData = flattenDiagnosticInputPackPayload(rawData);
+
+      Object.keys(flatData).forEach(function (name) {
+        const value = flatData[name];
+        const fields = document.querySelectorAll('[name="' + CSS.escape(name) + '"]');
+
+        if (!fields || fields.length === 0) {
+          return;
+        }
+
+        fields.forEach(function (field) {
+          const tagName = field.tagName.toLowerCase();
+          const type = (field.getAttribute("type") || "").toLowerCase();
+
+          if (type === "file") {
+            return;
+          }
+
+          if (type === "checkbox") {
+            if (Array.isArray(value)) {
+              field.checked = value.includes(field.value);
+            } else {
+              field.checked = Boolean(value);
+            }
+            return;
+          }
+
+          if (type === "radio") {
+            field.checked = String(field.value) === String(value || "");
+            return;
+          }
+
+          if (tagName === "select") {
+            field.value = value || "";
+            return;
+          }
+
+          if (
+            tagName === "textarea" ||
+            type === "text" ||
+            type === "email" ||
+            type === "tel" ||
+            type === "url" ||
+            type === "number" ||
+            type === "hidden" ||
+            type === ""
+          ) {
+            field.value = value || "";
+          }
+        });
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", applyDiagnosticInputPackFormData);
+  </script>
 </body>
 </html>

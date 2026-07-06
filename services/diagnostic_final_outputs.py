@@ -42,18 +42,30 @@ def build_full_output(diagnostic: dict[str, Any]) -> str:
 
 
 def build_client_output(diagnostic: dict[str, Any]) -> str:
-    return f"""
-# Экспресс-диагностика AIha Consulting
+    """
+    Клиентский вывод теперь равен D-004.
 
-## Итоговый диагностический отчёт
+    D-003 остаётся внутренним диагностическим артефактом и не приклеивается
+    к клиентскому отчёту. D-004 сам содержит:
+    - executive summary;
+    - business value;
+    - ROI / часы / деньги;
+    - competitive advantage;
+    - MVP;
+    - clear offer;
+    - приложение с технической готовностью данных.
+    """
+    d004_result = str(diagnostic.get("d004_result") or "").strip()
 
-{_clean(diagnostic.get("d003_result"))}
+    if d004_result:
+        return d004_result
 
----
+    return """
+# Итоговый отчёт AIha Consulting — Industrial AI
 
-## Коммерческое предложение на следующий этап
+D-004 клиентский отчёт ещё не сформирован.
 
-{_clean(diagnostic.get("d004_result"))}
+Сначала выполните D-004 Commercial Proposal / Client Report.
 """.strip()
 
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import json
 import sqlite3
 
 from db import DB_PATH
@@ -285,6 +285,360 @@ def get_latest_done_task_by_stage(lead_id: int, stage: str) -> sqlite3.Row | Non
             (lead_id, stage),
         ).fetchone()
 
+def _load_json_object(value: str | None) -> dict:
+    if not value:
+        return {}
+
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+
+    if isinstance(parsed, dict):
+        return parsed
+
+    return {}
+
+
+def _count_non_empty(value) -> int:
+    if value is None:
+        return 0
+
+    if isinstance(value, str):
+        return 1 if value.strip() else 0
+
+    if isinstance(value, (int, float, bool)):
+        return 1
+
+    if isinstance(value, list):
+        return sum(_count_non_empty(item) for item in value)
+
+    if isinstance(value, dict):
+        return sum(_count_non_empty(item) for item in value.values())
+
+    return 0
+
+
+def _get_task_diagnostic_run_id(task: sqlite3.Row) -> int | None:
+    try:
+        diagnostic_run_id = task["diagnostic_run_id"]
+    except (KeyError, IndexError):
+        return None
+
+    if diagnostic_run_id is None:
+        return None
+
+    try:
+        return int(diagnostic_run_id)
+    except (TypeError, ValueError):
+        return None
+
+
+def _get_latest_diagnostic_run_for_lead(lead_id: int) -> sqlite3.Row | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        return conn.execute(
+            """
+            SELECT *
+            FROM diagnostic_runs
+            WHERE lead_id = ?
+            ORDER BY
+                COALESCE(updated_at, created_at) DESC,
+                id DESC
+            LIMIT 1
+            """,
+            (lead_id,),
+        ).fetchone()
+
+
+def _get_active_diagnostic_input_pack_for_t_workflow(
+    *,
+    lead: sqlite3.Row,
+    task: sqlite3.Row,
+) -> sqlite3.Row | None:
+    diagnostic_run_id = _get_task_diagnostic_run_id(task)
+
+    if diagnostic_run_id is None:
+        latest_run = _get_latest_diagnostic_run_for_lead(int(lead["id"]))
+        if latest_run is not None:
+            diagnostic_run_id = int(latest_run["id"])
+
+    if diagnostic_run_id is None:
+        return None
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        return conn.execute(
+            """
+            SELECT *
+            FROM diagnostic_input_packs
+            WHERE diagnostic_run_id = ?
+              AND brief_type = 'diagnostic_input_pack'
+              AND is_active = 1
+              AND raw_payload IS NOT NULL
+              AND TRIM(raw_payload) != ''
+            ORDER BY
+                COALESCE(updated_at, created_at) DESC,
+                id DESC
+            LIMIT 1
+            """,
+            (diagnostic_run_id,),
+        ).fetchone()
+
+
+def _get_attachments_for_input_pack(input_pack_id: int) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+
+        rows = conn.execute(
+            """
+            SELECT
+                id,
+                diagnostic_run_id,
+                input_pack_id,
+                file_type,
+                original_filename,
+                stored_filename,
+                uploaded_at
+            FROM diagnostic_attachments
+            WHERE input_pack_id = ?
+            ORDER BY uploaded_at DESC, id DESC
+            """,
+            (input_pack_id,),
+        ).fetchall()
+
+    return [dict(row) for row in rows]
+
+
+def _build_diagnostic_input_pack_summary(payload: dict) -> dict:
+    return {
+        "brief_type": payload.get("brief_type"),
+        "brief_version": payload.get("brief_version"),
+        "source": payload.get("source"),
+        "submitted_at": payload.get("submitted_at"),
+        "non_empty_fields_count": _count_non_empty(payload),
+        "top_level_keys": list(payload.keys()),
+    }
+
+
+def _build_t001_input_from_diagnostic_input_pack(
+    *,
+    lead: sqlite3.Row,
+    constraints: sqlite3.Row | None,
+    task: sqlite3.Row,
+    input_pack: sqlite3.Row,
+) -> str:
+    payload = _load_json_object(input_pack["raw_payload"])
+    summary = _build_diagnostic_input_pack_summary(payload)
+    attachments = _get_attachments_for_input_pack(int(input_pack["id"]))
+
+    return f"""
+Входные данные для Intake Completeness Agent:
+
+1. Идентификация
+
+Lead_ID: L-{int(lead["id"]):03d}
+Task_ID: {value(task, "id")}
+Task_Code: {value(task, "task_code")}
+Diagnostic_Run_ID: {value(input_pack, "diagnostic_run_id")}
+Input_Pack_ID: {value(input_pack, "id")}
+Дата_заявки: {value(input_pack, "created_at")}
+Компания: {value(lead, "company")}
+Контактное_лицо: {value(lead, "name")}
+Телефон: {value(lead, "phone")}
+Источник: diagnostic_input_pack
+Платформа_источник: AIha Consulting
+Канал_заявки: Diagnostic Input Pack
+Тип_заявки: AI-аудит / предварительная диагностика
+
+2. Приоритет источников
+
+Основной источник для T-001:
+active Diagnostic Input Pack.
+
+Источник_raw_payload: {payload.get("source") or value(input_pack, "source")}
+
+Используй raw payload ниже как источник истины для оценки полноты анкеты.
+Карточку лида и client_constraints используй только как fallback или дополнительный контекст.
+Если данные из карточки лида противоречат Diagnostic Input Pack, приоритет имеет Diagnostic Input Pack.
+
+3. Diagnostic Input Pack Summary
+
+{json.dumps(summary, ensure_ascii=False, indent=2)}
+
+4. Raw Diagnostic Input Pack
+
+{json.dumps(payload, ensure_ascii=False, indent=2)}
+
+5. Загруженные материалы
+
+{json.dumps(attachments, ensure_ascii=False, indent=2)}
+
+6. Ограничения клиента из client_constraints
+
+Персональные данные:
+{value(constraints, "has_personal_data")}
+
+Типы ПДн:
+{value(constraints, "personal_data_types")}
+
+Можно обезличить:
+{value(constraints, "can_anonymize")}
+
+Облако допустимо:
+{value(constraints, "cloud_allowed")}
+
+Требования к локализации:
+{value(constraints, "localization_requirements")}
+
+Политики ИБ:
+{value(constraints, "security_policies")}
+
+NDA:
+{value(constraints, "nda_status")}
+
+Ограничения scope:
+{value(constraints, "scope_limits")}
+
+Риск ограничений:
+{value(constraints, "restriction_risk")}
+
+Комментарий по ограничениям:
+{value(constraints, "restriction_comment")}
+
+7. Задача Intake Completeness
+
+Stage:
+{value(task, "stage")}
+
+Agent:
+{value(task, "agent_type")}
+
+Task:
+{value(task, "task_title")}
+
+Expected output:
+{value(task, "expected_output")}
+
+8. Что нужно получить
+
+Проверь, можно ли запускать аналитическую цепочку.
+
+Критерий:
+- если все 7 базовых блоков заполнены или достаточно понятны — можно переходить к Risk Assessment;
+- если хотя бы один критичный блок отсутствует — анализ запускать нельзя;
+- если блок заполнен частично — укажи, можно ли двигаться дальше с оговоркой или нужно добрать данные.
+
+7 базовых блоков:
+1. Бизнес-боль.
+2. Конкретный процесс.
+3. Объём / частота / масштаб.
+4. Данные / документы / примеры.
+5. Текущие системы.
+6. Владелец процесса / контакт.
+7. Ожидаемый результат.
+
+9. Требуемый результат
+
+Сформируй результат для поля result задачи Intake Completeness:
+
+1. Intake Completeness Summary.
+2. Проверка 7 базовых блоков:
+   - блок;
+   - статус: заполнен / частично / не заполнен;
+   - комментарий.
+3. Проверка ограничений.
+4. Проверка экономики.
+5. Недостающие данные.
+6. Вопросы клиенту.
+7. Решение:
+   - READY_FOR_ANALYSIS
+   - NOT_READY_FOR_ANALYSIS
+8. Рекомендованный следующий шаг.
+
+Если анализ можно запускать, явно напиши:
+"Анкета достаточна для запуска Risk Assessment."
+
+Если анализ запускать нельзя, явно напиши:
+"Анализ запускать нельзя до дозаполнения анкеты."
+
+10. Жёсткое ограничение scope
+
+Оцени только процесс, отрасль, ограничения и данные, которые есть в Diagnostic Input Pack.
+
+Запрещено добавлять альтернативные процессы, отрасли или сценарии, которых нет в анкете клиента.
+""".strip()
+
+def _build_diagnostic_input_pack_context_for_t_workflow(
+    *,
+    lead: sqlite3.Row,
+    task: sqlite3.Row,
+) -> str:
+    input_pack = _get_active_diagnostic_input_pack_for_t_workflow(
+        lead=lead,
+        task=task,
+    )
+
+    if input_pack is None:
+        return ""
+
+    payload = _load_json_object(input_pack["raw_payload"])
+    summary = _build_diagnostic_input_pack_summary(payload)
+    attachments = _get_attachments_for_input_pack(int(input_pack["id"]))
+
+    return f"""
+0. Active Diagnostic Input Pack Context
+
+Diagnostic_Run_ID: {value(input_pack, "diagnostic_run_id")}
+Input_Pack_ID: {value(input_pack, "id")}
+Источник: diagnostic_input_pack
+Источник_raw_payload: {payload.get("source") or value(input_pack, "source")}
+
+Правило источников для T-цепочки:
+Для T-001, T-002, T-003 и T-004 основным источником является active Diagnostic Input Pack.
+Не используй Industrial AI Brief как основной источник для T-цепочки.
+Industrial AI Brief относится к D-001–D-004 и не должен подменять базовый AI Audit Brief.
+Если нижний блок после разделителя содержит старый lead-form context, legacy audit form source, industrial AI references или другой Input_Pack_ID, используй его только как исторический/вспомогательный контекст.
+При конфликте всегда побеждает Active Diagnostic Input Pack Context выше.
+
+Diagnostic Input Pack Summary:
+
+{json.dumps(summary, ensure_ascii=False, indent=2)}
+
+Raw Diagnostic Input Pack:
+
+{json.dumps(payload, ensure_ascii=False, indent=2)}
+
+Attachments linked to Diagnostic Input Pack:
+
+{json.dumps(attachments, ensure_ascii=False, indent=2)}
+""".strip()
+
+def _sanitize_legacy_t_context(task_context: str) -> str:
+    if not task_context:
+        return ""
+
+    replacements = {
+        "Источник: aiha_consulting_audit_form": (
+            "Источник_legacy_lead_form: legacy_consulting_audit_form "
+            "(fallback context only; do not use as primary source)"
+        ),
+        "aiha_consulting_audit_form": "legacy_consulting_audit_form",
+        "Канал_заявки: Форма AI-аудита": (
+            "Канал_legacy_lead_form: Форма AI-аудита "
+            "(fallback context only)"
+        ),
+    }
+
+    sanitized = task_context
+
+    for old, new in replacements.items():
+        sanitized = sanitized.replace(old, new)
+
+    return sanitized
+
 
 def build_task_input_block(
     *,
@@ -305,6 +659,19 @@ def build_task_input_block(
     stage = value(task, "stage")
 
     if stage == "Intake Completeness":
+        input_pack = _get_active_diagnostic_input_pack_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        if input_pack is not None:
+            return _build_t001_input_from_diagnostic_input_pack(
+                lead=lead,
+                constraints=constraints,
+                task=task,
+                input_pack=input_pack,
+            )
+
         return build_intake_completeness_input_block(
             lead=lead,
             constraints=constraints,
@@ -312,32 +679,76 @@ def build_task_input_block(
         )
 
     if stage == "Risk Assessment":
-        return build_risk_assessment_input_block(
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        task_context = build_risk_assessment_input_block(
             lead=lead,
             constraints=constraints,
             task=task,
         )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
 
     if stage == "Economics Assessment":
-        return build_economics_assessment_input_block(
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        task_context = build_economics_assessment_input_block(
             lead=lead,
             constraints=constraints,
             task=task,
         )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
 
     if stage == "Final Output":
-        return build_final_output_input_block(
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
             lead=lead,
-            constraints=constraints,
             task=task,
         )
 
-    if stage == "Client Delivery":
-        return build_client_delivery_input_block(
+        task_context = build_final_output_input_block(
             lead=lead,
             constraints=constraints,
             task=task,
         )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
+
+    if stage == "Client Delivery":
+        diagnostic_context = _build_diagnostic_input_pack_context_for_t_workflow(
+            lead=lead,
+            task=task,
+        )
+
+        task_context = build_client_delivery_input_block(
+            lead=lead,
+            constraints=constraints,
+            task=task,
+        )
+        task_context = _sanitize_legacy_t_context(task_context)
+
+        if diagnostic_context:
+            return f"{diagnostic_context}\n\n---\n\n{task_context}"
+
+        return task_context
 
     raise ValueError(f"Unknown active workflow stage: {stage}")
 

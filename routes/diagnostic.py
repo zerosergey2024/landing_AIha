@@ -23,10 +23,17 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from services.diagnostics import (
+    create_diagnostic_input_pack_from_lead_if_missing,
+    delete_diagnostic_attachment,
+    get_diagnostic_attachment,
+    get_active_input_pack,
     get_diagnostic_run_by_token,
+    get_input_pack_attachments,
     get_latest_input_pack,
+    reset_diagnostic_results_after_input_change,
     save_client_input_pack,
     save_diagnostic_attachment,
+    upsert_active_input_pack,
 )
 from services.site_links import get_site_links
 
@@ -454,7 +461,15 @@ def _load_raw_payload(input_pack: Any) -> dict[str, Any]:
     if isinstance(raw_payload, dict):
         return raw_payload
 
-    return json.loads(raw_payload)
+    try:
+        payload = json.loads(raw_payload)
+    except Exception:
+        return {}
+
+    if isinstance(payload, dict):
+        return payload
+
+    return {}
 
 
 def _flatten_payload(
@@ -1008,15 +1023,20 @@ def input_pack(token: str):
     if request.method == "POST":
         payload = _build_input_pack_payload()
 
-        saved_input_pack = save_client_input_pack(
+        # Жёсткая защита, чтобы базовый AI Audit Brief не сохранился как другой тип brief
+        payload["brief_type"] = "diagnostic_input_pack"
+        payload["source"] = payload.get("source") or "web_form"
+
+        saved_input_pack = upsert_active_input_pack(
             diagnostic_run_id=diagnostic_run["id"],
+            brief_type="diagnostic_input_pack",
             payload=payload,
+            source=payload["source"],
         )
 
         input_pack_id = _extract_input_pack_id(saved_input_pack)
 
         uploaded_files = request.files.getlist("attachments")
-
         _save_uploaded_files(
             files=uploaded_files,
             diagnostic_run_id=diagnostic_run["id"],
@@ -1024,10 +1044,31 @@ def input_pack(token: str):
         )
 
         return redirect(
-            url_for(
-                "diagnostic.input_pack_submitted",
-                token=token,
+            url_for("diagnostic.input_pack_submitted", token=token)
+        )
+
+    active_input_pack = get_active_input_pack(
+        diagnostic_run_id=diagnostic_run["id"],
+        brief_type="diagnostic_input_pack",
+    )
+
+    if active_input_pack is None:
+        created_input_pack_id = create_diagnostic_input_pack_from_lead_if_missing(
+            int(diagnostic_run["id"])
+        )
+
+        if created_input_pack_id is not None:
+            active_input_pack = get_active_input_pack(
+                diagnostic_run_id=diagnostic_run["id"],
+                brief_type="diagnostic_input_pack",
             )
+
+    form_data = _load_raw_payload(active_input_pack)
+
+    existing_attachments = []
+    if active_input_pack is not None:
+        existing_attachments = get_input_pack_attachments(
+            int(active_input_pack["id"])
         )
 
     return render_template(
@@ -1036,6 +1077,10 @@ def input_pack(token: str):
         diagnostic_run=diagnostic_run,
         diagnostic=diagnostic_run,
         token=token,
+        form_data=form_data,
+        edit_mode=active_input_pack is not None,
+        input_pack_id=active_input_pack["id"] if active_input_pack else None,
+        existing_attachments=existing_attachments,
         download_docx_url=url_for(
             "diagnostic.download_input_pack_template",
             token=token,
@@ -1133,7 +1178,10 @@ def download_submitted_input_pack(token: str, file_format: str):
     if file_format not in {"docx", "pdf"}:
         abort(404)
 
-    input_pack = get_latest_input_pack(diagnostic_run["id"])
+    input_pack = get_active_input_pack(
+        diagnostic_run["id"],
+        "diagnostic_input_pack",
+    )
 
     if input_pack is None:
         return "Заполненная форма не найдена", 404
@@ -2066,6 +2114,68 @@ def _build_industrial_ai_brief_payload() -> dict[str, Any]:
         },
     }
 
+@diagnostic_bp.post("/attachments/<token>/<int:attachment_id>/delete")
+def delete_attachment(token: str, attachment_id: int):
+    diagnostic_run = get_diagnostic_run_by_token(token)
+
+    if diagnostic_run is None:
+        return render_template(
+            "consulting/diagnostic_input_pack_invalid.html",
+            site_links=get_site_links(),
+        ), 404
+
+    attachment = get_diagnostic_attachment(attachment_id)
+
+    if attachment is None:
+        return "Файл не найден", 404
+
+    if int(attachment["diagnostic_run_id"]) != int(diagnostic_run["id"]):
+        return "Файл не относится к этой диагностике", 403
+
+    input_pack_id = int(attachment["input_pack_id"])
+
+    active_industrial_pack = get_active_input_pack(
+        diagnostic_run_id=diagnostic_run["id"],
+        brief_type="industrial_ai",
+    )
+
+    active_base_pack = get_active_input_pack(
+        diagnostic_run_id=diagnostic_run["id"],
+        brief_type="diagnostic_input_pack",
+    )
+
+    deleted_from_industrial = (
+        active_industrial_pack is not None
+        and int(active_industrial_pack["id"]) == input_pack_id
+    )
+
+    deleted_from_base = (
+        active_base_pack is not None
+        and int(active_base_pack["id"]) == input_pack_id
+    )
+
+    if not deleted_from_industrial and not deleted_from_base:
+        return "Файл не относится к активному бланку", 403
+
+    delete_diagnostic_attachment(
+        attachment_id=attachment_id,
+        diagnostic_run_id=int(diagnostic_run["id"]),
+        input_pack_id=input_pack_id,
+    )
+
+    if deleted_from_industrial:
+        reset_diagnostic_results_after_input_change(
+            int(diagnostic_run["id"])
+        )
+
+        return redirect(
+            url_for("diagnostic.industrial_ai_brief", token=token)
+        )
+
+    return redirect(
+        url_for("diagnostic.input_pack", token=token)
+    )
+
 
 @diagnostic_bp.route("/industrial-ai/<token>", methods=["GET", "POST"])
 def industrial_ai_brief(token: str):
@@ -2078,6 +2188,14 @@ def industrial_ai_brief(token: str):
         ), 404
 
     if request.method == "POST":
+        previous_input_pack = get_active_input_pack(
+            diagnostic_run_id=diagnostic_run["id"],
+            brief_type="industrial_ai",
+        )
+
+        previous_payload = _load_raw_payload(previous_input_pack)
+        previous_industrial_payload = previous_payload.get("industrial_ai", {})
+
         payload = _build_industrial_ai_brief_payload()
 
         # Жёсткая защита, чтобы Industrial AI Brief не сохранился как обычный input pack
@@ -2085,22 +2203,51 @@ def industrial_ai_brief(token: str):
         payload["brief_version"] = payload.get("brief_version") or "v1"
         payload["source"] = payload.get("source") or "web_form"
 
-        saved_input_pack = save_client_input_pack(
+        current_industrial_payload = payload.get("industrial_ai", {})
+        payload_changed = previous_industrial_payload != current_industrial_payload
+
+        saved_input_pack = upsert_active_input_pack(
             diagnostic_run_id=diagnostic_run["id"],
+            brief_type="industrial_ai",
             payload=payload,
+            source=payload["source"],
         )
 
         input_pack_id = _extract_input_pack_id(saved_input_pack)
 
         uploaded_files = request.files.getlist("attachments")
-        _save_uploaded_files(
+        has_uploaded_files = any(
+            file and file.filename
+            for file in uploaded_files
+        )
+
+        saved_files = _save_uploaded_files(
             files=uploaded_files,
             diagnostic_run_id=diagnostic_run["id"],
             input_pack_id=input_pack_id,
-        )
+        ) or []
+
+        if payload_changed or has_uploaded_files or saved_files:
+            reset_diagnostic_results_after_input_change(
+                int(diagnostic_run["id"])
+            )
 
         return redirect(
             url_for("diagnostic.industrial_ai_brief_submitted", token=token)
+        )
+
+    active_input_pack = get_active_input_pack(
+        diagnostic_run_id=diagnostic_run["id"],
+        brief_type="industrial_ai",
+    )
+
+    form_data = _load_raw_payload(active_input_pack)
+
+    existing_attachments = []
+
+    if active_input_pack is not None:
+        existing_attachments = get_input_pack_attachments(
+            int(active_input_pack["id"])
         )
 
     return render_template(
@@ -2109,6 +2256,10 @@ def industrial_ai_brief(token: str):
         diagnostic_run=diagnostic_run,
         diagnostic=diagnostic_run,
         token=token,
+        form_data=form_data,
+        edit_mode=active_input_pack is not None,
+        input_pack_id=active_input_pack["id"] if active_input_pack else None,
+        existing_attachments=existing_attachments,
         download_docx_url=url_for(
             "diagnostic.download_industrial_ai_brief_template",
             token=token,
@@ -2210,7 +2361,10 @@ def download_submitted_industrial_ai_brief(token: str, file_format: str):
     if file_format not in {"docx", "pdf"}:
         abort(404)
 
-    input_pack = get_latest_input_pack(diagnostic_run["id"])
+    input_pack = get_active_input_pack(
+        diagnostic_run["id"],
+        "industrial_ai",
+    )
 
     if input_pack is None:
         return "Заполненный Industrial AI Brief не найден", 404
