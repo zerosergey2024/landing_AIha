@@ -1,69 +1,213 @@
-# AIha Landing & AI Intake System
+# AIha Landing
 
-AIha — Flask-проект для AI-студии, которая внедряет AI в реальные бизнес-процессы: производство, заказы, сервис, HR, логистику, документооборот и внутренние операции компаний.
+AIha Landing — Flask-приложение для AIha Ecosystem, AIha Studio и AIha Consulting.
 
-## Возможности
+Проект включает публичный landing, форму первичного AI-аудита, административную панель, AI-agent workflow и диагностическую цепочку Industrial AI.
 
-- Лендинг AIha
-- Форма заявки
-- Виджет обратного звонка
-- Telegram-бот для приема заявок
-- Интеграция с локальной Phi-4 Mini через Ollama
-- Structured extraction заявок
-- SQLite как основная локальная база
-- AI-квалификация лидов
-- Manager UI
-- Lead Pipeline
-- Карточка заявки
-- Защита admin-панели
-- Экспорт заявок в XLSX
-- Backup базы
-- Архивация завершенных заявок
+## Основные модули
 
-## Архитектура
+### Public
+
+- `/` — AIha Ecosystem
+- `/studio` — AIha Studio
+- `/consulting` — AIha Consulting
+- `/consulting/audit` — форма первичного AI-аудита
+- `/consulting/thanks` — страница после отправки формы
+
+### Admin
+
+- `/admin/login`
+- `/admin/leads`
+- `/admin/leads/<id>`
+- `/admin/leads/<id>/final`
+- `/admin/tasks/<id>/run-ai`
+- `/admin/tasks/<id>/update`
+
+### Diagnostic Workflow
+
+Проект поддерживает две цепочки обработки:
+
+#### T-chain
+
+Первичный AI-аудит:
 
 ```text
-Landing / Callback / Telegram Bot
-↓
-Flask
-↓
-Phi-4 Mini / Qualification
-↓
-SQLite
-↓
-Manager UI
-↓
-XLSX Export
+audit_form → lead → diagnostic_input_pack → T-001 → T-002 → T-003 → T-004/T-005
+```
 
-Локальный запуск
+#### D-chain
+
+Industrial AI diagnostic:
+
+```text
+Industrial AI Brief → D-001 → D-002 → D-003 → D-004
+```
+
+Этапы:
+
+- `D-001` — оценка готовности кейса, данных и вложений
+- `D-002` — MVP design
+- `D-003` — внутреннее диагностическое решение
+- `D-004` — клиентский отчёт и коммерческий следующий шаг
+
+## Структура проекта
+
+```text
+aiha_landing/
+├── app.py
+├── db.py
+├── requirements.txt
+├── routes/
+│   ├── public.py
+│   ├── admin.py
+│   ├── api.py
+│   └── diagnostic.py
+├── services/
+│   ├── ai_agent.py
+│   ├── prompt_loader.py
+│   ├── leads.py
+│   ├── consulting.py
+│   ├── tasks.py
+│   ├── intake_blocks.py
+│   ├── diagnostics.py
+│   ├── diagnostic_normalizer.py
+│   ├── diagnostic_assessment.py
+│   ├── mvp_design.py
+│   ├── diagnostic_report.py
+│   ├── commercial_proposal.py
+│   ├── diagnostic_final_outputs.py
+│   └── final_outputs.py
+├── prompts/
+│   ├── system/
+│   └── agents/
+├── templates/
+│   └── consulting/
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── img/
+└── uploads/
+    └── diagnostics/
+```
+
+## Локальный запуск
+
+### 1. Создать виртуальное окружение
+
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
+```
+
+### 2. Установить зависимости
+
+```powershell
 pip install -r requirements.txt
+```
+
+### 3. Создать `.env`
+
+```env
+FLASK_ENV=development
+SECRET_KEY=change-me
+OPENAI_API_KEY=change-me
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+DATABASE_PATH=leads.db
+UPLOAD_FOLDER=uploads/diagnostics
+```
+
+### 4. Инициализировать базу
+
+```powershell
+python init_db.py
+```
+
+### 5. Запустить приложение
+
+```powershell
 python app.py
+```
 
-Открыть: http://127.0.0.1:5000
-Admin: http://127.0.0.1:5000/admin/leads
+Приложение будет доступно по адресу:
 
-Telegram-бот:  python telegram_bot.py
+```text
+http://127.0.0.1:5000
+```
 
-Phi-4 Mini
-Требуется установленный Ollama и модель: ollama pull phi4-mini
+## Диагностические команды
 
-Переменные окружения
-Создать .env: SECRET_KEY=your_secret_key
-              TELEGRAM_BOT_TOKEN=your_bot_token
-              TELEGRAM_CHAT_ID=your_chat_id
-              ADMIN_USERNAME=admin
-              ADMIN_PASSWORD=strong_password
+Пример запуска D-chain для diagnostic run `7`:
 
-Экспорт в Excel - python export_leads_xlsx.py
-Файл создается в: exports/leads_export.xlsx
+```powershell
+curl.exe -X POST -L http://127.0.0.1:5000/admin/diagnostic/7/run-d001
+curl.exe -X POST -L http://127.0.0.1:5000/admin/diagnostic/7/run-d002
+curl.exe -X POST -L http://127.0.0.1:5000/admin/diagnostic/7/run-d003
+curl.exe -X POST -L http://127.0.0.1:5000/admin/diagnostic/7/run-d004
+```
 
-Backup базы - python backup_db.py
-Архивация заявок - python archive_leads.py
-Архивируются заявки со статусами: Завершено, Архив
+## Проверка кода
 
-Безопасность данных
-AIha проектирует решения с приоритетом локального хранения и контролируемой обработки данных.
-Персональные данные, базы заявок, архивы, выгрузки и .env не должны попадать в публичный репозиторий.
+```powershell
+python -m py_compile `
+  routes\diagnostic.py `
+  services\diagnostics.py `
+  services\diagnostic_assessment.py `
+  services\mvp_design.py `
+  services\diagnostic_report.py `
+  services\commercial_proposal.py `
+  services\diagnostic_final_outputs.py
+```
+
+## Переменные и локальные файлы
+
+В Git не должны попадать:
+
+```text
+.env
+.venv/
+leads.db
+leads_archive.db
+_backups/
+backups/
+exports/
+uploads/diagnostics/*
+__pycache__/
+*.pyc
+```
+
+Файлы БД и загруженные документы используются локально. Для production-хостинга рекомендуется вынести БД и файлы во внешнее persistent storage.
+
+## Deployment
+
+Для production-запуска можно использовать `gunicorn`.
+
+Минимальные файлы для хостинга:
+
+```text
+wsgi.py
+Procfile
+.env.example
+requirements.txt
+```
+
+Пример `wsgi.py`:
+
+```python
+from app import app
+```
+
+Пример `Procfile`:
+
+```text
+web: gunicorn wsgi:app
+```
+
+SQLite подходит для MVP и тестового хостинга только при наличии persistent disk. Для стабильного production рекомендуется PostgreSQL и внешнее хранилище файлов.
+
+## Репозиторий
+
+```text
+https://github.com/zerosergey2024/landing_AIha
+```
 
