@@ -699,22 +699,23 @@ input[type="submit"] {
 }
 
 /* ================================
-   Ecosystem page scoped protection
-   Keeps the original AIha dark visual identity
+   Ecosystem original identity tuning
+   Scenario-first content, original ecosystem visual system
+   Must stay at the end of styles.css
    ================================ */
 
-body.ecosystem-page {
+html body.ecosystem-page {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: var(--text);
+  min-height: 100vh;
+  color: #eef4ff !important;
   background:
     radial-gradient(circle at 10% 0%, rgba(34, 114, 255, .27), transparent 26rem),
     radial-gradient(circle at 88% 12%, rgba(138, 44, 255, .20), transparent 28rem),
-    linear-gradient(180deg, #14213d 0%, var(--bg) 34%, #020612 100%);
-  min-height: 100vh;
+    linear-gradient(180deg, #14213d 0%, #030816 34%, #020612 100%) !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-body.ecosystem-page::before {
+html body.ecosystem-page::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -726,83 +727,271 @@ body.ecosystem-page::before {
   mask-image: linear-gradient(to bottom, rgba(0,0,0,.65), transparent 75%);
 }
 
-body.ecosystem-page h1,
-body.ecosystem-page h2,
-body.ecosystem-page h3 {
-  color: var(--text);
+/* Accessibility */
+
+html body.ecosystem-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-body.ecosystem-page p {
-  color: inherit;
+/* Layout backgrounds */
+
+html body.ecosystem-page main,
+html body.ecosystem-page .section,
+html body.ecosystem-page .hero,
+html body.ecosystem-page .start-work {
+  background: transparent !important;
+  color: #eef4ff !important;
 }
 
-body.ecosystem-page .lead,
-body.ecosystem-page .mini-card p,
-body.ecosystem-page .problem-card p,
-body.ecosystem-page .solution-item p,
-body.ecosystem-page .start-steps span,
-body.ecosystem-page .site-footer p {
-  color: var(--muted);
+/* Typography */
+
+html body.ecosystem-page h1,
+html body.ecosystem-page h2,
+html body.ecosystem-page h3,
+html body.ecosystem-page h4,
+html body.ecosystem-page h5,
+html body.ecosystem-page h6,
+html body.ecosystem-page strong {
+  color: #eef4ff !important;
+  opacity: 1 !important;
 }
 
-body.ecosystem-page .site-footer a {
-  color: #8fd8ff;
+html body.ecosystem-page .ecosystem-hero-title {
+  max-width: 860px;
+  margin: 0 0 24px;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: #eef4ff !important;
+  opacity: 1 !important;
+  text-shadow: 0 18px 60px rgba(34, 114, 255, 0.22);
+}
+
+html body.ecosystem-page p,
+html body.ecosystem-page span,
+html body.ecosystem-page li,
+html body.ecosystem-page .lead,
+html body.ecosystem-page .mini-card p,
+html body.ecosystem-page .problem-card p,
+html body.ecosystem-page .solution-item p,
+html body.ecosystem-page .start-steps span,
+html body.ecosystem-page .hero__metrics span,
+html body.ecosystem-page .scenario-list span,
+html body.ecosystem-page .site-footer p {
+  color: #a9b5ca !important;
+  opacity: 1 !important;
+}
+
+html body.ecosystem-page .eyebrow,
+html body.ecosystem-page .brand__ecosystem,
+html body.ecosystem-page .site-footer a {
+  color: #8fd8ff !important;
+}
+
+/* Header */
+
+html body.ecosystem-page .site-header {
+  background: rgba(3, 8, 22, .76) !important;
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+html body.ecosystem-page .brand {
+  min-width: 0;
+}
+
+html body.ecosystem-page .brand__logo {
+  width: 220px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 16px 24px rgba(34, 114, 255, .18));
+}
+
+html body.ecosystem-page .brand__ecosystem {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid rgba(143, 216, 255, 0.28);
+  border-radius: 999px;
+  color: #8fd8ff !important;
+  font-size: 13px;
   font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(34, 114, 255, 0.08);
 }
 
-body.ecosystem-page .ecosystem-route-card {
-  min-height: 440px;
+html body.ecosystem-page .nav a {
+  color: #a9b5ca !important;
 }
 
-body.ecosystem-page .scenario-list {
+html body.ecosystem-page .nav a:hover {
+  color: #eef4ff !important;
+}
+
+/* Hero */
+
+html body.ecosystem-page .hero {
+  min-height: calc(100vh - 86px);
+  margin-top: -35px;
+}
+
+html body.ecosystem-page .hero__card {
+  min-height: 560px;
+  border-radius: 42px;
+  overflow: hidden;
+}
+
+html body.ecosystem-page .hero__logo {
+  width: min(100%, 520px);
+  border-radius: 999px;
+  filter: drop-shadow(0 22px 50px rgba(34, 114, 255, .22));
+}
+
+html body.ecosystem-page .ai-panel {
+  color: #dfefff !important;
+  background: rgba(3,8,22,.76) !important;
+  border: 1px solid rgba(92,200,255,.28) !important;
+}
+
+/* Cards / glass identity */
+
+html body.ecosystem-page .glass-card,
+html body.ecosystem-page .hero__metrics div,
+html body.ecosystem-page .mini-card,
+html body.ecosystem-page .problem-card,
+html body.ecosystem-page .solution-item,
+html body.ecosystem-page .start-card,
+html body.ecosystem-page .hero__card {
+  color: #eef4ff !important;
+  background: linear-gradient(180deg, rgba(20, 34, 62, .80), rgba(5, 10, 26, .72)) !important;
+  border: 1px solid rgba(150, 172, 220, 0.22) !important;
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+html body.ecosystem-page .ecosystem-route-card {
+  min-height: 430px;
+}
+
+html body.ecosystem-page .ecosystem-route-card .button {
+  margin-top: auto;
+}
+
+/* Scenario list */
+
+html body.ecosystem-page .scenario-list {
   display: grid;
   gap: 10px;
   margin: 20px 0 26px;
 }
 
-body.ecosystem-page .scenario-list span {
+html body.ecosystem-page .scenario-list span {
   display: block;
-  color: var(--muted);
+  color: #a9b5ca !important;
   line-height: 1.45;
 }
 
-body.ecosystem-page .scenario-list span::before {
+html body.ecosystem-page .scenario-list span::before {
   content: "✓";
   margin-right: 9px;
   color: #8fd8ff;
   font-weight: 900;
 }
 
-body.ecosystem-page .final-actions {
+/* Buttons */
+
+html body.ecosystem-page .button,
+html body.ecosystem-page .header-cta {
+  color: #ffffff !important;
+}
+
+html body.ecosystem-page .button--primary {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2272ff, #8a2cff) !important;
+  box-shadow: 0 18px 38px rgba(34, 114, 255, .35);
+}
+
+html body.ecosystem-page .button--ghost {
+  color: #eef4ff !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+
+html body.ecosystem-page .final-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
   margin-top: 32px;
 }
 
-body.ecosystem-page .brand__logo {
-  width: 230px;
+/* Footer */
+
+html body.ecosystem-page .site-footer {
+  background: rgba(2, 6, 18, .92) !important;
+  border-top: 1px solid rgba(255,255,255,.08);
 }
 
-body.ecosystem-page .hero__logo {
-  width: min(100%, 520px);
+html body.ecosystem-page .site-footer p {
+  color: #a9b5ca !important;
 }
+
+/* Mobile */
 
 @media (max-width: 760px) {
-  body.ecosystem-page .brand__logo {
+  html body.ecosystem-page .ecosystem-hero-title {
+    font-size: 34px;
+  }
+
+  html body.ecosystem-page .brand__logo {
     width: 190px;
   }
 
-  body.ecosystem-page .ecosystem-route-card {
+  html body.ecosystem-page .brand__ecosystem {
+    display: none;
+  }
+
+  html body.ecosystem-page .hero {
+    min-height: auto;
+    margin-top: 0;
+  }
+
+  html body.ecosystem-page .hero__card {
+    min-height: 360px;
+    border-radius: 30px;
+  }
+
+  html body.ecosystem-page .ecosystem-route-card {
     min-height: auto;
   }
 
-  body.ecosystem-page .final-actions {
+  html body.ecosystem-page .final-actions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  body.ecosystem-page .final-actions .button {
+  html body.ecosystem-page .final-actions .button {
     text-align: center;
   }
+}
+
+
+$pattern = '(?s)/\* ================================\s+Ecosystem original identity tuning.*\z'
+
+if ($css -match $pattern) {
+    $css = [regex]::Replace($css, $pattern, $replacement)
+    Set-Content -Encoding UTF8 $path $css
+    Write-Host "Ecosystem CSS block replaced."
+} else {
+    Add-Content -Encoding UTF8 $path "`r`n$replacement"
+    Write-Host "Ecosystem CSS block appended."
 }
