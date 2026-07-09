@@ -1152,3 +1152,201 @@ html body.consulting-page .hero h1 {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ================================
+   AIha Consulting audit form
+   Scoped to /consulting/audit
+   ================================ */
+
+html body.audit-form-page {
+  margin: 0;
+  min-height: 100vh;
+  color: #eef4ff;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(93, 214, 167, .16), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(34, 114, 255, .22), transparent 30rem),
+    radial-gradient(circle at 70% 70%, rgba(138, 44, 255, .14), transparent 32rem),
+    linear-gradient(180deg, #101a2f 0%, #030816 38%, #020612 100%);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html body.audit-form-page * {
+  box-sizing: border-box;
+}
+
+html body.audit-form-page a {
+  color: inherit;
+}
+
+html body.audit-form-page .audit-page {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 44px 0 72px;
+}
+
+html body.audit-form-page .audit-card {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(93,214,167,.12), transparent 26rem),
+    linear-gradient(180deg, rgba(20, 34, 62, .82), rgba(5, 10, 26, .76));
+  border: 1px solid rgba(150, 172, 220, 0.22);
+  border-radius: 34px;
+  padding: 42px;
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+html body.audit-form-page .audit-header {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(150, 172, 220, 0.18);
+}
+
+html body.audit-form-page .audit-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+html body.audit-form-page .audit-logo {
+  width: 230px;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  filter: drop-shadow(0 14px 28px rgba(34, 114, 255, 0.18));
+}
+
+html body.audit-form-page h1,
+html body.audit-form-page h2 {
+  color: #eef4ff;
+}
+
+html body.audit-form-page h1 {
+  margin: 0 0 12px;
+  font-size: clamp(36px, 5vw, 62px);
+  line-height: 1.04;
+  letter-spacing: -0.055em;
+}
+
+html body.audit-form-page .audit-header p {
+  margin: 0;
+  color: #a9b5ca;
+  font-size: 18px;
+  line-height: 1.65;
+  max-width: 800px;
+}
+
+html body.audit-form-page .audit-info {
+  margin: 26px 0 36px;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: rgba(93, 214, 167, 0.10);
+  border: 1px solid rgba(93, 214, 167, 0.26);
+  color: #c9d6ea;
+  line-height: 1.65;
+}
+
+html body.audit-form-page .audit-info strong {
+  color: #5dd6a7;
+}
+
+html body.audit-form-page main form {
+  display: grid;
+  gap: 18px;
+}
+
+html body.audit-form-page h2 {
+  margin: 34px 0 4px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(150, 172, 220, 0.20);
+  border-left: 6px solid #5dd6a7;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.18;
+}
+
+html body.audit-form-page label {
+  display: grid;
+  gap: 8px;
+  font-weight: 800;
+  color: #dbe7ff;
+}
+
+html body.audit-form-page input,
+html body.audit-form-page select,
+html body.audit-form-page textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  border: 1px solid rgba(150, 172, 220, 0.26);
+  border-radius: 14px;
+  background: rgba(3, 8, 22, .72);
+  color: #eef4ff;
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+html body.audit-form-page input::placeholder,
+html body.audit-form-page textarea::placeholder {
+  color: rgba(169, 181, 202, .74);
+}
+
+html body.audit-form-page textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+html body.audit-form-page input:focus,
+html body.audit-form-page select:focus,
+html body.audit-form-page textarea:focus {
+  outline: none;
+  border-color: #5dd6a7;
+  box-shadow: 0 0 0 4px rgba(93, 214, 167, 0.14);
+}
+
+html body.audit-form-page button[type="submit"] {
+  margin-top: 26px;
+  min-height: 54px;
+  padding: 15px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #5dd6a7, #8fd8ff);
+  color: #06130e;
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 18px 38px rgba(93, 214, 167, .22);
+}
+
+html body.audit-form-page button[type="submit"]:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  html body.audit-form-page .audit-page {
+    width: min(100% - 28px, 1180px);
+    padding: 28px 0 52px;
+  }
+
+  html body.audit-form-page .audit-card {
+    padding: 24px;
+    border-radius: 28px;
+  }
+
+  html body.audit-form-page .audit-header {
+    grid-template-columns: 1fr;
+  }
+
+  html body.audit-form-page .audit-logo {
+    width: 190px;
+  }
+
+  html body.audit-form-page button[type="submit"] {
+    width: 100%;
+  }
+}
