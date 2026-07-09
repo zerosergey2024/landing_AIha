@@ -1350,3 +1350,118 @@ html body.audit-form-page button[type="submit"]:hover {
     width: 100%;
   }
 }
+
+/* ================================
+   Diagnostic Input Pack form
+   Scoped to /diagnostic/input-pack/<token>
+   ================================ */
+
+html body.diagnostic-input-pack-page {
+  margin: 0;
+  min-height: 100vh;
+  color: #eef4ff;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(93, 214, 167, .14), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(34, 114, 255, .22), transparent 30rem),
+    radial-gradient(circle at 70% 70%, rgba(138, 44, 255, .14), transparent 32rem),
+    linear-gradient(180deg, #101a2f 0%, #030816 38%, #020612 100%);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html body.diagnostic-input-pack-page * {
+  box-sizing: border-box;
+}
+
+html body.diagnostic-input-pack-page h1,
+html body.diagnostic-input-pack-page h2,
+html body.diagnostic-input-pack-page h3,
+html body.diagnostic-input-pack-page h4,
+html body.diagnostic-input-pack-page label,
+html body.diagnostic-input-pack-page legend,
+html body.diagnostic-input-pack-page strong {
+  color: #eef4ff !important;
+}
+
+html body.diagnostic-input-pack-page p,
+html body.diagnostic-input-pack-page span,
+html body.diagnostic-input-pack-page small,
+html body.diagnostic-input-pack-page li {
+  color: #a9b5ca;
+}
+
+html body.diagnostic-input-pack-page main,
+html body.diagnostic-input-pack-page .container,
+html body.diagnostic-input-pack-page .page,
+html body.diagnostic-input-pack-page .wrapper {
+  color: #eef4ff;
+}
+
+html body.diagnostic-input-pack-page .card,
+html body.diagnostic-input-pack-page .section-card,
+html body.diagnostic-input-pack-page .form-card,
+html body.diagnostic-input-pack-page .panel,
+html body.diagnostic-input-pack-page .block,
+html body.diagnostic-input-pack-page fieldset,
+html body.diagnostic-input-pack-page section {
+  background:
+    linear-gradient(180deg, rgba(20, 34, 62, .82), rgba(5, 10, 26, .76)) !important;
+  border: 1px solid rgba(150, 172, 220, 0.22) !important;
+  border-radius: 28px;
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+html body.diagnostic-input-pack-page input,
+html body.diagnostic-input-pack-page select,
+html body.diagnostic-input-pack-page textarea {
+  background: rgba(3, 8, 22, .72) !important;
+  color: #eef4ff !important;
+  border: 1px solid rgba(150, 172, 220, 0.28) !important;
+  border-radius: 14px;
+}
+
+html body.diagnostic-input-pack-page input::placeholder,
+html body.diagnostic-input-pack-page textarea::placeholder {
+  color: rgba(169, 181, 202, .72);
+}
+
+html body.diagnostic-input-pack-page input[type="checkbox"],
+html body.diagnostic-input-pack-page input[type="radio"] {
+  width: auto;
+  accent-color: #2272ff;
+}
+
+html body.diagnostic-input-pack-page input:focus,
+html body.diagnostic-input-pack-page select:focus,
+html body.diagnostic-input-pack-page textarea:focus {
+  outline: none;
+  border-color: #5dd6a7 !important;
+  box-shadow: 0 0 0 4px rgba(93, 214, 167, 0.14);
+}
+
+html body.diagnostic-input-pack-page button,
+html body.diagnostic-input-pack-page .button,
+html body.diagnostic-input-pack-page .btn {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2272ff, #8a2cff) !important;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+html body.diagnostic-input-pack-page a {
+  color: #8fd8ff;
+}
+
+@media (max-width: 760px) {
+  html body.diagnostic-input-pack-page .card,
+  html body.diagnostic-input-pack-page .section-card,
+  html body.diagnostic-input-pack-page .form-card,
+  html body.diagnostic-input-pack-page .panel,
+  html body.diagnostic-input-pack-page .block,
+  html body.diagnostic-input-pack-page fieldset,
+  html body.diagnostic-input-pack-page section {
+    border-radius: 22px;
+  }
+}
