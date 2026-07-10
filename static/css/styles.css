@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #030816;
   --bg-2: #0d1830;
   --panel: rgba(16, 28, 52, 0.78);
@@ -55,30 +55,10 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.brand__ecosystem {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 12px;
-  border: 1px solid rgba(143, 216, 255, 0.28);
-  border-radius: 999px;
-  color: #8fd8ff;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  background: rgba(34, 114, 255, 0.08);
-}
-
+.brand { display: flex; align-items: center; }
 .brand__logo {
-  width: 220px;
+  width: 152px;
   height: auto;
-  display: block;
   filter: drop-shadow(0 16px 24px rgba(34, 114, 255, .18));
 }
 
@@ -96,28 +76,6 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
   color: #dff5ff;
   background: rgba(34, 114, 255, .12);
-  cursor: pointer;
-  font-weight: 800;
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-}
-
-.header-cta:hover {
-  transform: translateY(-1px);
-  border-color: rgba(143, 216, 255, 0.72);
-  box-shadow: 0 12px 32px rgba(34, 114, 255, 0.22);
-}
-
-.nav a[href="/consulting/audit"] {
-  color: #ffffff;
-  padding: 9px 13px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(34, 114, 255, 0.32), rgba(138, 44, 255, 0.28));
-  border: 1px solid rgba(143, 216, 255, 0.22);
-}
-
-.nav a[href="/consulting/audit"]:hover {
-  border-color: rgba(143, 216, 255, 0.58);
-  box-shadow: 0 10px 28px rgba(34, 114, 255, 0.22);
 }
 
 .section {
@@ -544,156 +502,1066 @@ input:focus, textarea:focus { border-color: rgba(92,200,255,.62); box-shadow: 0 
 }
 @media (max-width: 760px) {
   .process-list, .start-steps { grid-template-columns: 1fr; }
-  .brand__ecosystem {
-  display: none;
-}
 }
 
-.cards-grid--2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* ================================
+   Ecosystem original identity tuning
+   Scenario-first content, original ecosystem visual system
+   Must stay at the end of styles.css
+   ================================ */
+
+html body.ecosystem-page {
+  margin: 0;
+  min-height: 100vh;
+  color: #eef4ff !important;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(34, 114, 255, .27), transparent 26rem),
+    radial-gradient(circle at 88% 12%, rgba(138, 44, 255, .20), transparent 28rem),
+    linear-gradient(180deg, #14213d 0%, #030816 34%, #020612 100%) !important;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.ecosystem-grid {
-  margin-top: 26px;
+html body.ecosystem-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.65), transparent 75%);
 }
 
-.ecosystem-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 360px;
+/* Accessibility */
+
+html body.ecosystem-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.ecosystem-card .button {
+/* Layout backgrounds */
+
+html body.ecosystem-page main,
+html body.ecosystem-page .section,
+html body.ecosystem-page .hero,
+html body.ecosystem-page .start-work {
+  background: transparent !important;
+  color: #eef4ff !important;
+}
+
+/* Typography */
+
+html body.ecosystem-page h1,
+html body.ecosystem-page h2,
+html body.ecosystem-page h3,
+html body.ecosystem-page h4,
+html body.ecosystem-page h5,
+html body.ecosystem-page h6,
+html body.ecosystem-page strong {
+  color: #eef4ff !important;
+  opacity: 1 !important;
+}
+
+html body.ecosystem-page .ecosystem-hero-title {
+  max-width: 860px;
+  margin: 0 0 24px;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  color: #eef4ff !important;
+  opacity: 1 !important;
+  text-shadow: 0 18px 60px rgba(34, 114, 255, 0.22);
+}
+
+html body.ecosystem-page p,
+html body.ecosystem-page span,
+html body.ecosystem-page li,
+html body.ecosystem-page .lead,
+html body.ecosystem-page .mini-card p,
+html body.ecosystem-page .problem-card p,
+html body.ecosystem-page .solution-item p,
+html body.ecosystem-page .start-steps span,
+html body.ecosystem-page .hero__metrics span,
+html body.ecosystem-page .scenario-list span,
+html body.ecosystem-page .site-footer p {
+  color: #a9b5ca !important;
+  opacity: 1 !important;
+}
+
+html body.ecosystem-page .eyebrow,
+html body.ecosystem-page .brand__ecosystem,
+html body.ecosystem-page .site-footer a {
+  color: #8fd8ff !important;
+}
+
+/* Header */
+
+html body.ecosystem-page .site-header {
+  background: rgba(3, 8, 22, .76) !important;
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+html body.ecosystem-page .brand {
+  min-width: 0;
+}
+
+html body.ecosystem-page .brand__logo {
+  width: 220px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 16px 24px rgba(34, 114, 255, .18));
+}
+
+html body.ecosystem-page .brand__ecosystem {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid rgba(143, 216, 255, 0.28);
+  border-radius: 999px;
+  color: #8fd8ff !important;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(34, 114, 255, 0.08);
+}
+
+html body.ecosystem-page .nav a {
+  color: #a9b5ca !important;
+}
+
+html body.ecosystem-page .nav a:hover {
+  color: #eef4ff !important;
+}
+
+/* Hero */
+
+html body.ecosystem-page .hero {
+  min-height: calc(100vh - 86px);
+  margin-top: -35px;
+}
+
+html body.ecosystem-page .hero__card {
+  min-height: 560px;
+  border-radius: 42px;
+  overflow: hidden;
+}
+
+html body.ecosystem-page .hero__logo {
+  width: min(100%, 520px);
+  border-radius: 999px;
+  filter: drop-shadow(0 22px 50px rgba(34, 114, 255, .22));
+}
+
+html body.ecosystem-page .ai-panel {
+  color: #dfefff !important;
+  background: rgba(3,8,22,.76) !important;
+  border: 1px solid rgba(92,200,255,.28) !important;
+}
+
+/* Cards / glass identity */
+
+html body.ecosystem-page .glass-card,
+html body.ecosystem-page .hero__metrics div,
+html body.ecosystem-page .mini-card,
+html body.ecosystem-page .problem-card,
+html body.ecosystem-page .solution-item,
+html body.ecosystem-page .start-card,
+html body.ecosystem-page .hero__card {
+  color: #eef4ff !important;
+  background: linear-gradient(180deg, rgba(20, 34, 62, .80), rgba(5, 10, 26, .72)) !important;
+  border: 1px solid rgba(150, 172, 220, 0.22) !important;
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+html body.ecosystem-page .ecosystem-route-card {
+  min-height: 430px;
+}
+
+html body.ecosystem-page .ecosystem-route-card .button {
   margin-top: auto;
-  width: fit-content;
 }
+
+/* Scenario list */
+
+html body.ecosystem-page .scenario-list {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 26px;
+}
+
+html body.ecosystem-page .scenario-list span {
+  display: block;
+  color: #a9b5ca !important;
+  line-height: 1.45;
+}
+
+html body.ecosystem-page .scenario-list span::before {
+  content: "✓";
+  margin-right: 9px;
+  color: #8fd8ff;
+  font-weight: 900;
+}
+
+/* Buttons */
+
+html body.ecosystem-page .button,
+html body.ecosystem-page .header-cta {
+  color: #ffffff !important;
+}
+
+html body.ecosystem-page .button--primary {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2272ff, #8a2cff) !important;
+  box-shadow: 0 18px 38px rgba(34, 114, 255, .35);
+}
+
+html body.ecosystem-page .button--ghost {
+  color: #eef4ff !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+
+html body.ecosystem-page .final-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+/* Footer */
+
+html body.ecosystem-page .site-footer {
+  background: rgba(2, 6, 18, .92) !important;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+html body.ecosystem-page .site-footer p {
+  color: #a9b5ca !important;
+}
+
+/* Mobile */
 
 @media (max-width: 760px) {
-  .cards-grid--2 {
-    grid-template-columns: 1fr;
+  html body.ecosystem-page .ecosystem-hero-title {
+    font-size: 34px;
+  }
+
+  html body.ecosystem-page .brand__logo {
+    width: 190px;
+  }
+
+  html body.ecosystem-page .brand__ecosystem {
+    display: none;
+  }
+
+  html body.ecosystem-page .hero {
+    min-height: auto;
+    margin-top: 0;
+  }
+
+  html body.ecosystem-page .hero__card {
+    min-height: 360px;
+    border-radius: 30px;
+  }
+
+  html body.ecosystem-page .ecosystem-route-card {
+    min-height: auto;
+  }
+
+  html body.ecosystem-page .final-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html body.ecosystem-page .final-actions .button {
+    text-align: center;
   }
 }
 
-.consulting-brand {
-    display: inline-flex;
-    align-items: center;
+/* ================================
+   AIha Consulting page
+   Scoped to /consulting
+   ================================ */
+
+html body.consulting-page {
+  margin: 0;
+  min-height: 100vh;
+  color: #eef4ff;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(93, 214, 167, .16), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(34, 114, 255, .22), transparent 30rem),
+    radial-gradient(circle at 70% 70%, rgba(138, 44, 255, .14), transparent 32rem),
+    linear-gradient(180deg, #101a2f 0%, #030816 38%, #020612 100%);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.consulting-brand__logo {
-    width: 220px;
-    height: auto;
-    display: block;
-    filter: drop-shadow(0 14px 28px rgba(34, 114, 255, 0.18));
+html body.consulting-page * {
+  box-sizing: border-box;
 }
 
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f7fb;
-    color: #1f2937;
-    line-height: 1.5;
+html body.consulting-page a {
+  color: inherit;
 }
 
-.audit-page {
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 40px 20px 64px;
+html body.consulting-page .container {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
 }
 
-.audit-card {
-    background: #ffffff;
-    border: 1px solid #e1e7f0;
-    border-radius: 28px;
-    padding: 40px;
-    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.10);
+html body.consulting-page header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 18px 0;
+  background: rgba(3, 8, 22, .76);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
-.audit-header {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 28px;
-    align-items: center;
-    margin-bottom: 28px;
-    padding-bottom: 26px;
-    border-bottom: 1px solid #e5ebf3;
+html body.consulting-page .nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
 }
 
-.audit-logo {
-    width: 210px;
-    height: auto;
-    display: block;
+html body.consulting-page .consulting-brand {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  min-width: 0;
 }
 
-.audit-header h1 {
-    margin: 0 0 10px;
-    font-size: 42px;
-    line-height: 1.1;
-    color: #0f172a;
+html body.consulting-page .consulting-brand__logo {
+  width: 230px;
+  height: auto;
+  display: block;
+  border-radius: 14px;
+  filter: drop-shadow(0 14px 28px rgba(34, 114, 255, 0.18));
 }
 
-.audit-header p {
-    margin: 0;
-    color: #5b667a;
-    font-size: 18px;
+html body.consulting-page .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  color: #a9b5ca;
+  font-size: 14px;
+  font-weight: 700;
 }
 
-.audit-info {
-    margin: 24px 0 34px;
-    padding: 18px 20px;
-    border-radius: 18px;
-    background: #eef6ff;
-    border: 1px solid #cfe3ff;
-    color: #24364f;
+html body.consulting-page .nav-links a {
+  text-decoration: none;
+  color: #a9b5ca;
 }
 
-h2 {
-    margin-top: 34px;
-    margin-bottom: 18px;
-    color: #0f172a;
-    font-size: 28px;
+html body.consulting-page .nav-links a:hover {
+  color: #eef4ff;
 }
 
-label {
-    font-weight: 700;
-    color: #263244;
+html body.consulting-page .hero {
+  padding: 86px 0 62px;
+  border-top: 0;
 }
 
-input,
-select,
-textarea {
+html body.consulting-page .hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, .82fr);
+  gap: 44px;
+  align-items: center;
+}
+
+html body.consulting-page .eyebrow {
+  color: #5dd6a7;
+  font-weight: 900;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+html body.consulting-page h1,
+html body.consulting-page h2,
+html body.consulting-page h3 {
+  color: #eef4ff;
+}
+
+html body.consulting-page h1 {
+  font-size: clamp(38px, 5vw, 68px);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  margin: 0 0 24px;
+}
+
+html body.consulting-page h2 {
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  margin: 0 0 18px;
+}
+
+html body.consulting-page h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+html body.consulting-page p {
+  margin: 0 0 16px;
+}
+
+html body.consulting-page .lead,
+html body.consulting-page .section-head p,
+html body.consulting-page .card p,
+html body.consulting-page .card li,
+html body.consulting-page .hero-card li,
+html body.consulting-page .note,
+html body.consulting-page footer {
+  color: #a9b5ca;
+}
+
+html body.consulting-page .lead {
+  font-size: 19px;
+  line-height: 1.65;
+  max-width: 760px;
+}
+
+html body.consulting-page .hero-card,
+html body.consulting-page .card,
+html body.consulting-page .process-item,
+html body.consulting-page .note,
+html body.consulting-page .final-cta {
+  background: linear-gradient(180deg, rgba(20, 34, 62, .80), rgba(5, 10, 26, .72));
+  border: 1px solid rgba(150, 172, 220, 0.22);
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.12),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+html body.consulting-page .hero-card {
+  border-radius: 28px;
+  padding: 30px;
+}
+
+html body.consulting-page .hero-card ul,
+html body.consulting-page .card ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+html body.consulting-page .cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 30px;
+}
+
+html body.consulting-page .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 14px 20px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 900;
+  border: 1px solid transparent;
+}
+
+html body.consulting-page .btn-primary {
+  color: #06130e;
+  background: linear-gradient(135deg, #5dd6a7, #8fd8ff);
+  box-shadow: 0 18px 38px rgba(93, 214, 167, .22);
+}
+
+html body.consulting-page .btn-secondary {
+  color: #eef4ff;
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.14);
+}
+
+html body.consulting-page section {
+  padding: 58px 0;
+  border-top: 1px solid rgba(150, 172, 220, 0.14);
+}
+
+html body.consulting-page .section-head {
+  max-width: 780px;
+  margin-bottom: 30px;
+}
+
+html body.consulting-page .cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+html body.consulting-page .card {
+  border-radius: 22px;
+  padding: 24px;
+}
+
+html body.consulting-page .two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+html body.consulting-page .process-list {
+  display: grid;
+  gap: 14px;
+}
+
+html body.consulting-page .process-item {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 22px;
+}
+
+html body.consulting-page .num {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: rgba(93, 214, 167, 0.14);
+  color: #5dd6a7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+html body.consulting-page .note {
+  padding: 24px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(93, 214, 167, .10), rgba(34, 114, 255, .08));
+}
+
+html body.consulting-page .final-cta {
+  text-align: center;
+  border-radius: 32px;
+  padding: 46px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(93,214,167,.18), transparent 24rem),
+    linear-gradient(180deg, rgba(20, 34, 62, .84), rgba(5, 10, 26, .76));
+}
+
+html body.consulting-page footer {
+  padding: 36px 0;
+  border-top: 1px solid rgba(150, 172, 220, 0.14);
+  background: rgba(2, 6, 18, .92);
+}
+
+@media (max-width: 920px) {
+  html body.consulting-page .hero-grid,
+  html body.consulting-page .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  html body.consulting-page .cards {
+    grid-template-columns: 1fr;
+  }
+
+  html body.consulting-page .nav {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  html body.consulting-page .nav-links {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  html body.consulting-page .container {
+    width: min(100% - 28px, 1120px);
+  }
+
+  html body.consulting-page .consulting-brand__logo {
+    width: 190px;
+  }
+
+  html body.consulting-page .hero {
+    padding: 54px 0 44px;
+  }
+
+  html body.consulting-page .process-item {
+    grid-template-columns: 1fr;
+  }
+
+  html body.consulting-page .final-cta {
+    padding: 30px 22px;
+  }
+
+  html body.consulting-page .cta-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html body.consulting-page .btn {
     width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin-top: 6px;
-    padding: 12px 14px;
-    border: 1px solid #cfd8e6;
-    border-radius: 12px;
-    background: #ffffff;
-    color: #111827;
-    font: inherit;
+    text-align: center;
+  }
 }
 
-textarea {
-    min-height: 96px;
-    resize: vertical;
+/* ================================
+   Consulting hero layout fix
+   ================================ */
+
+html body.consulting-page section.hero {
+  display: block !important;
+  width: 100% !important;
+  min-height: auto !important;
+  padding: 86px 0 62px !important;
+  margin: 0 !important;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-    outline: none;
-    border-color: #2272ff;
-    box-shadow: 0 0 0 4px rgba(34, 114, 255, 0.12);
+html body.consulting-page .hero-grid {
+  width: min(1120px, calc(100% - 40px)) !important;
+  margin: 0 auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, .82fr) !important;
+  gap: 44px !important;
+  align-items: center !important;
 }
 
-button,
-input[type="submit"] {
-    padding: 14px 22px;
-    border: 0;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #2272ff, #8a2cff);
-    color: #ffffff;
-    font-weight: 800;
-    cursor: pointer;
+html body.consulting-page .hero-grid > div,
+html body.consulting-page .hero-grid > aside {
+  min-width: 0;
+}
+
+html body.consulting-page .hero h1 {
+  max-width: 820px;
+}
+
+@media (max-width: 920px) {
+  html body.consulting-page .hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ================================
+   AIha Consulting audit form
+   Scoped to /consulting/audit
+   ================================ */
+
+html body.audit-form-page {
+  margin: 0;
+  min-height: 100vh;
+  color: #eef4ff;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(93, 214, 167, .16), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(34, 114, 255, .22), transparent 30rem),
+    radial-gradient(circle at 70% 70%, rgba(138, 44, 255, .14), transparent 32rem),
+    linear-gradient(180deg, #101a2f 0%, #030816 38%, #020612 100%);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html body.audit-form-page * {
+  box-sizing: border-box;
+}
+
+html body.audit-form-page a {
+  color: inherit;
+}
+
+html body.audit-form-page .audit-page {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 44px 0 72px;
+}
+
+html body.audit-form-page .audit-card {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(93,214,167,.12), transparent 26rem),
+    linear-gradient(180deg, rgba(20, 34, 62, .82), rgba(5, 10, 26, .76));
+  border: 1px solid rgba(150, 172, 220, 0.22);
+  border-radius: 34px;
+  padding: 42px;
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+html body.audit-form-page .audit-header {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(150, 172, 220, 0.18);
+}
+
+html body.audit-form-page .audit-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+html body.audit-form-page .audit-logo {
+  width: 230px;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  filter: drop-shadow(0 14px 28px rgba(34, 114, 255, 0.18));
+}
+
+html body.audit-form-page h1,
+html body.audit-form-page h2 {
+  color: #eef4ff;
+}
+
+html body.audit-form-page h1 {
+  margin: 0 0 12px;
+  font-size: clamp(36px, 5vw, 62px);
+  line-height: 1.04;
+  letter-spacing: -0.055em;
+}
+
+html body.audit-form-page .audit-header p {
+  margin: 0;
+  color: #a9b5ca;
+  font-size: 18px;
+  line-height: 1.65;
+  max-width: 800px;
+}
+
+html body.audit-form-page .audit-info {
+  margin: 26px 0 36px;
+  padding: 20px 22px;
+  border-radius: 22px;
+  background: rgba(93, 214, 167, 0.10);
+  border: 1px solid rgba(93, 214, 167, 0.26);
+  color: #c9d6ea;
+  line-height: 1.65;
+}
+
+html body.audit-form-page .audit-info strong {
+  color: #5dd6a7;
+}
+
+html body.audit-form-page main form {
+  display: grid;
+  gap: 18px;
+}
+
+html body.audit-form-page h2 {
+  margin: 34px 0 4px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(150, 172, 220, 0.20);
+  border-left: 6px solid #5dd6a7;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.18;
+}
+
+html body.audit-form-page label {
+  display: grid;
+  gap: 8px;
+  font-weight: 800;
+  color: #dbe7ff;
+}
+
+html body.audit-form-page input,
+html body.audit-form-page select,
+html body.audit-form-page textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  border: 1px solid rgba(150, 172, 220, 0.26);
+  border-radius: 14px;
+  background: rgba(3, 8, 22, .72);
+  color: #eef4ff;
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+html body.audit-form-page input::placeholder,
+html body.audit-form-page textarea::placeholder {
+  color: rgba(169, 181, 202, .74);
+}
+
+html body.audit-form-page textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+html body.audit-form-page input:focus,
+html body.audit-form-page select:focus,
+html body.audit-form-page textarea:focus {
+  outline: none;
+  border-color: #5dd6a7;
+  box-shadow: 0 0 0 4px rgba(93, 214, 167, 0.14);
+}
+
+html body.audit-form-page button[type="submit"] {
+  margin-top: 26px;
+  min-height: 54px;
+  padding: 15px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #5dd6a7, #8fd8ff);
+  color: #06130e;
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 18px 38px rgba(93, 214, 167, .22);
+}
+
+html body.audit-form-page button[type="submit"]:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  html body.audit-form-page .audit-page {
+    width: min(100% - 28px, 1180px);
+    padding: 28px 0 52px;
+  }
+
+  html body.audit-form-page .audit-card {
+    padding: 24px;
+    border-radius: 28px;
+  }
+
+  html body.audit-form-page .audit-header {
+    grid-template-columns: 1fr;
+  }
+
+  html body.audit-form-page .audit-logo {
+    width: 190px;
+  }
+
+  html body.audit-form-page button[type="submit"] {
+    width: 100%;
+  }
+}
+
+/* ================================
+   Diagnostic Input Pack form
+   Scoped to /diagnostic/input-pack/<token>
+   ================================ */
+
+html body.diagnostic-input-pack-page {
+  margin: 0;
+  min-height: 100vh;
+  color: #eef4ff;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(93, 214, 167, .14), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(34, 114, 255, .22), transparent 30rem),
+    radial-gradient(circle at 70% 70%, rgba(138, 44, 255, .14), transparent 32rem),
+    linear-gradient(180deg, #101a2f 0%, #030816 38%, #020612 100%);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html body.diagnostic-input-pack-page * {
+  box-sizing: border-box;
+}
+
+html body.diagnostic-input-pack-page h1,
+html body.diagnostic-input-pack-page h2,
+html body.diagnostic-input-pack-page h3,
+html body.diagnostic-input-pack-page h4,
+html body.diagnostic-input-pack-page label,
+html body.diagnostic-input-pack-page legend,
+html body.diagnostic-input-pack-page strong {
+  color: #eef4ff !important;
+}
+
+html body.diagnostic-input-pack-page p,
+html body.diagnostic-input-pack-page span,
+html body.diagnostic-input-pack-page small,
+html body.diagnostic-input-pack-page li {
+  color: #a9b5ca;
+}
+
+html body.diagnostic-input-pack-page main,
+html body.diagnostic-input-pack-page .container,
+html body.diagnostic-input-pack-page .page,
+html body.diagnostic-input-pack-page .wrapper {
+  color: #eef4ff;
+}
+
+html body.diagnostic-input-pack-page .card,
+html body.diagnostic-input-pack-page .section-card,
+html body.diagnostic-input-pack-page .form-card,
+html body.diagnostic-input-pack-page .panel,
+html body.diagnostic-input-pack-page .block,
+html body.diagnostic-input-pack-page fieldset,
+html body.diagnostic-input-pack-page section {
+  background:
+    linear-gradient(180deg, rgba(20, 34, 62, .82), rgba(5, 10, 26, .76)) !important;
+  border: 1px solid rgba(150, 172, 220, 0.22) !important;
+  border-radius: 28px;
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+html body.diagnostic-input-pack-page input,
+html body.diagnostic-input-pack-page select,
+html body.diagnostic-input-pack-page textarea {
+  background: rgba(3, 8, 22, .72) !important;
+  color: #eef4ff !important;
+  border: 1px solid rgba(150, 172, 220, 0.28) !important;
+  border-radius: 14px;
+}
+
+html body.diagnostic-input-pack-page input::placeholder,
+html body.diagnostic-input-pack-page textarea::placeholder {
+  color: rgba(169, 181, 202, .72);
+}
+
+html body.diagnostic-input-pack-page input[type="checkbox"],
+html body.diagnostic-input-pack-page input[type="radio"] {
+  width: auto;
+  accent-color: #2272ff;
+}
+
+html body.diagnostic-input-pack-page input:focus,
+html body.diagnostic-input-pack-page select:focus,
+html body.diagnostic-input-pack-page textarea:focus {
+  outline: none;
+  border-color: #5dd6a7 !important;
+  box-shadow: 0 0 0 4px rgba(93, 214, 167, 0.14);
+}
+
+html body.diagnostic-input-pack-page button,
+html body.diagnostic-input-pack-page .button,
+html body.diagnostic-input-pack-page .btn {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #2272ff, #8a2cff) !important;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 900;
+}
+
+html body.diagnostic-input-pack-page a {
+  color: #8fd8ff;
+}
+
+@media (max-width: 760px) {
+  html body.diagnostic-input-pack-page .card,
+  html body.diagnostic-input-pack-page .section-card,
+  html body.diagnostic-input-pack-page .form-card,
+  html body.diagnostic-input-pack-page .panel,
+  html body.diagnostic-input-pack-page .block,
+  html body.diagnostic-input-pack-page fieldset,
+  html body.diagnostic-input-pack-page section {
+    border-radius: 22px;
+  }
+}
+
+/* ================================
+   Consulting process result card
+   ================================ */
+
+html body.consulting-page .process-result {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(300px, 1.05fr);
+  gap: 28px;
+  align-items: start;
+  padding: 30px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(93, 214, 167, .16), transparent 22rem),
+    linear-gradient(180deg, rgba(20, 34, 62, .86), rgba(5, 10, 26, .78));
+  border: 1px solid rgba(93, 214, 167, 0.28);
+  box-shadow:
+    0 24px 80px rgba(13, 77, 255, 0.14),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+html body.consulting-page .process-result__eyebrow {
+  margin-bottom: 10px;
+  color: #5dd6a7;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html body.consulting-page .process-result h3 {
+  margin: 0 0 14px;
+  color: #eef4ff;
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+html body.consulting-page .process-result p {
+  margin: 0;
+  color: #a9b5ca;
+  line-height: 1.65;
+}
+
+html body.consulting-page .process-result__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+html body.consulting-page .process-result__pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #dffbf0;
+  background: rgba(93, 214, 167, 0.12);
+  border: 1px solid rgba(93, 214, 167, 0.24);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+html body.consulting-page .process-result__list {
+  margin: 0;
+  padding-left: 20px;
+  color: #a9b5ca;
+}
+
+html body.consulting-page .process-result__list li {
+  margin-bottom: 9px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  html body.consulting-page .process-result {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  html body.consulting-page .process-result {
+    grid-template-columns: 1fr;
+    padding: 24px;
+    border-radius: 24px;
+  }
+}
+
+/* Consulting process result spacing fix */
+html body.consulting-page .process-result {
+  margin-left: 28px;
+}
+
+@media (max-width: 1100px) {
+  html body.consulting-page .process-result {
+    margin-left: 0;
+  }
 }

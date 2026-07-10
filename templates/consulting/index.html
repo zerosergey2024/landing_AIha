@@ -1,291 +1,13 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
 <head>
     <meta charset="utf-8">
     <title>AIha Consulting — аудит, диагностика и оптимизация</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-        :root {
-            --bg: #0b1020;
-            --card: #121a30;
-            --card-soft: #16213a;
-            --text: #ffffff;
-            --muted: #9fb3d9;
-            --accent: #5dd6a7;
-            --accent-blue: #8fd8ff;
-            --border: #2c3550;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-        }
-
-        a {
-            color: inherit;
-        }
-
-        .container {
-            width: min(1120px, calc(100% - 40px));
-            margin: 0 auto;
-        }
-
-        header {
-            padding: 28px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 24px;
-        }
-
-        .logo {
-            font-weight: 700;
-            letter-spacing: 0.3px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 18px;
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-        }
-
-        .hero {
-            padding: 72px 0 54px;
-        }
-
-        .hero-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 40px;
-            align-items: center;
-        }
-
-         .consulting-brand {
-            display: inline-flex;
-            align-items: center;
-            text-decoration: none;
-         }
-
-         .consulting-brand__logo {
-            width: 230px;
-            height: auto;
-            display: block;
-            border-radius: 14px;
-            filter: drop-shadow(0 14px 28px rgba(34, 114, 255, 0.18));
-}
-
-        .eyebrow {
-            color: var(--accent);
-            font-weight: 700;
-            margin-bottom: 14px;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 0.08em;
-        }
-
-        h1 {
-            font-size: clamp(36px, 5vw, 64px);
-            line-height: 1.05;
-            margin: 0 0 24px;
-        }
-
-        h2 {
-            font-size: clamp(28px, 3vw, 40px);
-            line-height: 1.15;
-            margin: 0 0 18px;
-        }
-
-        h3 {
-            margin: 0 0 12px;
-            font-size: 20px;
-        }
-
-        p {
-            margin: 0 0 16px;
-        }
-
-        .lead {
-            color: var(--muted);
-            font-size: 19px;
-            max-width: 760px;
-        }
-
-        .hero-card {
-            background: linear-gradient(180deg, var(--card), var(--card-soft));
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 28px;
-        }
-
-        .hero-card ul {
-            padding-left: 20px;
-            margin: 0;
-            color: var(--muted);
-        }
-
-        .cta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-top: 30px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 14px 20px;
-            border-radius: 12px;
-            text-decoration: none;
-            font-weight: 700;
-            border: 1px solid transparent;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: #06130e;
-        }
-
-        .btn-secondary {
-            border-color: var(--border);
-            color: var(--accent-blue);
-            background: rgba(255,255,255,0.02);
-        }
-
-        section {
-            padding: 54px 0;
-            border-top: 1px solid rgba(44, 53, 80, 0.7);
-        }
-
-        .section-head {
-            max-width: 760px;
-            margin-bottom: 28px;
-        }
-
-        .section-head p {
-            color: var(--muted);
-            font-size: 17px;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
-        }
-
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 22px;
-        }
-
-        .card p,
-        .card li {
-            color: var(--muted);
-        }
-
-        .card ul {
-            margin: 0;
-            padding-left: 18px;
-        }
-
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 22px;
-        }
-
-        .process-list {
-            display: grid;
-            gap: 14px;
-        }
-
-        .process-item {
-            display: grid;
-            grid-template-columns: 42px 1fr;
-            gap: 16px;
-            padding: 20px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-        }
-
-        .num {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            background: rgba(93, 214, 167, 0.14);
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-
-        .note {
-            background: rgba(143, 216, 255, 0.08);
-            border: 1px solid rgba(143, 216, 255, 0.24);
-            color: var(--muted);
-            padding: 22px;
-            border-radius: 18px;
-        }
-
-        .final-cta {
-            text-align: center;
-            background: linear-gradient(180deg, rgba(93,214,167,0.10), rgba(143,216,255,0.06));
-            border: 1px solid var(--border);
-            border-radius: 28px;
-            padding: 42px;
-        }
-
-        footer {
-            padding: 36px 0;
-            color: var(--muted);
-            border-top: 1px solid var(--border);
-            font-size: 14px;
-        }
-
-        @media (max-width: 900px) {
-            .hero-grid,
-            .two-col {
-                grid-template-columns: 1fr;
-            }
-
-            .cards {
-                grid-template-columns: 1fr;
-            }
-
-            .nav {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .nav-links {
-                flex-wrap: wrap;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
-<body>
+<body class="consulting-page">
 
 <header>
     <div class="container">
@@ -462,11 +184,38 @@
                         </p>
                     </div>
                 </div>
+
+                <div class="process-result" aria-label="Результат AI-аудита">
+                    <div>
+                        <div class="process-result__eyebrow">Результат</div>
+                        <h3>На выходе клиент получает</h3>
+                        <p>
+                            Понятную картину того, где бизнес теряет эффективность, какие процессы стоит менять,
+                            какие данные готовы к использованию и какой сценарий автоматизации или ИИ имеет
+                            практический смысл.
+                        </p>
+
+                        <div class="process-result__meta">
+                            <span class="process-result__pill">Практический вывод</span>
+                            <span class="process-result__pill">Roadmap внедрения</span>
+                            <span class="process-result__pill">MVP scope</span>
+                        </div>
+                    </div>
+
+                    <ul class="process-result__list">
+                        <li>карту процесса и ключевых точек потерь;</li>
+                        <li>оценку качества, структуры и готовности данных;</li>
+                        <li>список приоритетных AI- и automation-сценариев;</li>
+                        <li>описание минимального MVP для пилота;</li>
+                        <li>roadmap с KPI, рисками, сроками и бюджетными ориентирами;</li>
+                        <li>понимание, нужен ли ИИ или достаточно BI, автоматизации и реинжиниринга.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </section>
 
-        <section>
+    <section>
         <div class="container">
             <div class="section-head">
                 <h2>Два уровня диагностики AIha Consulting</h2>
@@ -634,3 +383,4 @@
 
 </body>
 </html>
+

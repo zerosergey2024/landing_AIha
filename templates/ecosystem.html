@@ -1,131 +1,275 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>AIha Ecosystem</title>
+    <title>AIha — экосистема практического ИИ для бизнеса</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AIha Ecosystem: аудит, диагностика, автоматизация и внедрение ИИ-решений для бизнеса.">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3">
+    <meta name="description" content="AIha помогает бизнесу внедрять ИИ без лишней сложности: быстрые AI-решения через AIha Studio и диагностика процессов через AIha Consulting.">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 
-<body>
-<div class="page-glow"></div>
+<body class="ecosystem-page">
 
 <header class="site-header">
-    <a class="brand" href="/" aria-label="AIha Ecosystem">
-        <img src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}" alt="AIha Ecosystem" class="brand__logo">
+    <a href="/" class="brand" aria-label="AIha Ecosystem">
+        <img
+            class="brand__logo"
+            src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}"
+            alt="AIha Ecosystem"
+        >
+        <span class="brand__ecosystem">Ecosystem</span>
     </a>
 
     <nav class="nav" aria-label="Основная навигация">
-        <a href="/studio">AIha Studio</a>
-        <a href="/consulting">AIha Consulting</a>
-        <a href="/consulting/audit">Первичный AI-аудит</a>
+        <a href="/">Ecosystem</a>
+        <a href="/studio">Studio</a>
+        <a href="/consulting">Consulting</a>
+        <a href="/consulting/audit">AI-аудит</a>
     </nav>
 
-    <a class="header-cta" href="/consulting/audit">Начать диагностику</a>
+    <a href="/studio" class="header-cta">Запустить AI-решение</a>
 </header>
 
-<main id="top">
-    <section class="hero section">
-        <div class="hero__content">
+<main>
+
+    <section class="section hero">
+        <div>
             <p class="eyebrow">AIha Ecosystem</p>
-            <h2>Аудит, диагностика, автоматизация и внедрение ИИ-решений для бизнеса</h2>
+
+            <h1 class="sr-only">AIha Ecosystem — практический ИИ для бизнеса</h1>
+            <h2 class="ecosystem-hero-title">AIha помогает бизнесу внедрять ИИ без лишней сложности</h2>
+
             <p class="lead">
-                AIha Ecosystem объединяет два направления: AIha Consulting для диагностики процессов,
-                данных и экономики, и AIha Studio для проектирования, MVP и внедрения AI-решений.
+                Если задача уже понятна — запускаем AI-решение через AIha Studio.
+                Если нужно сначала найти точку эффекта, оценить данные и экономику —
+                начинаем с AIha Consulting.
             </p>
 
             <div class="hero__actions">
-                <a class="button button--primary" href="/consulting/audit">Пройти первичный AI-аудит</a>
-                <a class="button button--ghost" href="/studio">Перейти в AIha Studio</a>
+                <a href="/studio" class="button button--primary">Запустить AI-решение</a>
+                <a href="/consulting/audit" class="button button--ghost">Пройти AI-аудит</a>
             </div>
 
             <div class="hero__metrics">
                 <div>
-                    <strong>Consulting</strong>
-                    <span>аудит процессов, данных, рисков, экономики и AI-readiness</span>
-                </div>
-                <div>
                     <strong>Studio</strong>
-                    <span>AI-агенты, RAG, MVP, интеграции, автоматизация и внедрение</span>
+                    <span>AI-боты, ассистенты, автоматизация заявок, сообщений, HR, контента и рутины.</span>
                 </div>
                 <div>
-                    <strong>Effect</strong>
-                    <span>управляемость, снижение потерь, экономия времени и прозрачный контроль</span>
+                    <strong>Consulting</strong>
+                    <span>AI-аудит, оценка данных, экономики, рисков и MVP-scope перед внедрением.</span>
+                </div>
+                <div>
+                    <strong>Industrial AI</strong>
+                    <span>Диагностика производственных потерь, простоев, данных и условий запуска MVP.</span>
                 </div>
             </div>
         </div>
 
-        <div class="hero__card glass-card">
-            <img class="hero__logo" src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}" alt="AIha Ecosystem">
-            <div class="ai-panel">
-                <span class="status-dot"></span>
-                <span>Диагностика → scope → MVP → внедрение</span>
+        <aside class="hero__card glass-card" aria-label="AIha Ecosystem">
+            <div>
+                <img
+                    class="hero__logo"
+                    src="{{ url_for('static', filename='img/aiha-ecosystem-logo.png') }}"
+                    alt="AIha Ecosystem"
+                >
+
+                <div class="ai-panel">
+                    <span class="status-dot"></span>
+                    <span>diagnostics → MVP → implementation</span>
+                </div>
             </div>
+        </aside>
+    </section>
+
+    <section class="section">
+        <div class="section-title">
+            <p class="eyebrow">Выберите сценарий</p>
+            <h2>Два входа в AIha Ecosystem</h2>
+            <p class="lead">
+                Не всем нужен большой консалтинг. Если задача понятна — можно сразу идти в Studio.
+                Если решение требует оценки эффекта, данных и рисков — лучше начать с Consulting.
+            </p>
+        </div>
+
+        <div class="cards-grid cards-grid--2 ecosystem-grid">
+            <article class="mini-card glass-card ecosystem-card ecosystem-route-card accent-card">
+                <p class="eyebrow">AIha Studio</p>
+                <h3>Уже знаете, что нужно автоматизировать?</h3>
+                <p>
+                    Подходит для малого бизнеса и команд, которым нужно быстро запустить
+                    AI-бота, ассистента, автоматизацию заявок, HR, контента или клиентских сообщений.
+                </p>
+
+                <div class="scenario-list">
+                    <span>Кафе, рестораны, цветочный бизнес</span>
+                    <span>Услуги, локальный ритейл, онлайн-школы</span>
+                    <span>HR-компании и небольшие B2B-команды</span>
+                    <span>Понятная задача без сложной диагностики</span>
+                </div>
+
+                <a href="/studio" class="button button--primary">Перейти в AIha Studio</a>
+            </article>
+
+            <article class="mini-card glass-card ecosystem-card ecosystem-route-card accent-card">
+                <p class="eyebrow">AIha Consulting</p>
+                <h3>Хотите понять, где ИИ окупится?</h3>
+                <p>
+                    Подходит для компаний со сложными процессами, данными, потерями,
+                    ручными операциями и необходимостью обосновать внедрение перед бюджетом.
+                </p>
+
+                <div class="scenario-list">
+                    <span>AI-аудит процессов и данных</span>
+                    <span>Оценка экономического эффекта</span>
+                    <span>Industrial AI диагностика</span>
+                    <span>Roadmap и MVP-scope перед внедрением</span>
+                </div>
+
+                <a href="/consulting/audit" class="button button--ghost">Пройти AI-аудит</a>
+            </article>
         </div>
     </section>
 
     <section class="section">
-        <p class="eyebrow">Выберите направление</p>
-        <h2 class="section-title">Два маршрута внутри одной экосистемы</h2>
+        <div class="section-title">
+            <p class="eyebrow">Быстрые внедрения</p>
+            <h2>Что можно автоматизировать быстро</h2>
+            <p class="lead">
+                Для понятных задач AIha Studio может сразу перейти к прототипу,
+                MVP или рабочей автоматизации без долгого предварительного анализа.
+            </p>
+        </div>
 
-        <div class="cards-grid cards-grid--2 ecosystem-grid">
-            <article class="glass-card mini-card ecosystem-card">
-                <h3>AIha Studio</h3>
-                <p>
-                    Внедрение ИИ-решений: AI-агенты, RAG-системы, AI-диспетчеры,
-                    автоматизация процессов, интеграции и MVP.
-                </p>
-                <p>
-                    Подходит, если вы уже понимаете, какой процесс хотите автоматизировать
-                    или готовы обсуждать MVP после диагностики.
-                </p>
-                <a class="button button--primary" href="/studio">Перейти в AIha Studio</a>
+        <div class="cards-grid cards-grid--3">
+            <article class="mini-card glass-card">
+                <h3>Заявки и обращения</h3>
+                <p>AI-боты для сайта, мессенджеров, первичной квалификации клиентов и маршрутизации заявок.</p>
             </article>
 
-            <article class="glass-card mini-card ecosystem-card">
-                <h3>AIha Consulting</h3>
-                <p>
-                    Аудит процессов, диагностика данных, поиск узких мест,
-                    оценка AI-readiness и подготовка roadmap автоматизации.
-                </p>
-                <p>
-                    Подходит, если нужно сначала понять, где ИИ действительно нужен,
-                    а где достаточно оптимизации процесса.
-                </p>
-                <a class="button button--primary" href="/consulting">Пройти аудит / диагностику</a>
+            <article class="mini-card glass-card">
+                <h3>Клиентские сообщения</h3>
+                <p>Автоответы, FAQ, поддержка, запись, напоминания и обработка типовых вопросов.</p>
             </article>
+
+            <article class="mini-card glass-card">
+                <h3>HR и подбор</h3>
+                <p>Первичный скрининг кандидатов, ответы соискателям, резюме, статусы и follow-up.</p>
+            </article>
+
+            <article class="mini-card glass-card">
+                <h3>Отчёты и сводки</h3>
+                <p>Сбор информации, ежедневные сводки, аналитика сообщений, задач и клиентских обращений.</p>
+            </article>
+
+            <article class="mini-card glass-card">
+                <h3>Контент и маркетинг</h3>
+                <p>Генерация текстов, идей, карточек товаров, постов, описаний и сценариев коммуникации.</p>
+            </article>
+
+            <article class="mini-card glass-card">
+                <h3>CRM-рутина</h3>
+                <p>Напоминания, follow-up, статусы клиентов, подготовка сообщений и передача данных менеджеру.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="problem-solution">
+            <div class="problem-card glass-card">
+                <p class="eyebrow">Когда нужна диагностика</p>
+                <h2>AIha Consulting нужен, когда вопрос не “сделать бота”, а “где ИИ даст эффект”</h2>
+                <p>
+                    В сложных процессах ошибка выбора AI-сценария стоит дорого.
+                    Перед внедрением нужно понять, какие данные есть, где теряются деньги,
+                    какие ограничения есть по ИБ и какой MVP действительно имеет смысл.
+                </p>
+            </div>
+
+            <div class="solution-list">
+                <div class="solution-item">
+                    <span>01</span>
+                    <div>
+                        <h3>Есть несколько процессов, но непонятно, с чего начинать</h3>
+                        <p>Диагностика помогает выбрать сценарий с наибольшим бизнес-эффектом.</p>
+                    </div>
+                </div>
+
+                <div class="solution-item">
+                    <span>02</span>
+                    <div>
+                        <h3>Нужно обосновать бюджет</h3>
+                        <p>AI-аудит переводит идею внедрения ИИ в язык потерь, эффекта и MVP-scope.</p>
+                    </div>
+                </div>
+
+                <div class="solution-item">
+                    <span>03</span>
+                    <div>
+                        <h3>Есть данные, но неизвестно, достаточно ли их</h3>
+                        <p>Проверяем data readiness, ограничения, регулярность выгрузок и качество источников.</p>
+                    </div>
+                </div>
+
+                <div class="solution-item">
+                    <span>04</span>
+                    <div>
+                        <h3>Есть риски по ИБ, ПДн, NDA или коммерческой тайне</h3>
+                        <p>Фиксируем безопасный формат MVP: локальная обработка, обезличивание, правила хранения и удаления.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <section class="section start-work">
-        <div class="glass-card start-card">
-            <p class="eyebrow">Связь направлений</p>
-            <h2>Consulting может быть самостоятельной услугой или входом в Studio</h2>
-            <p class="lead">
-                Каждый проект внедрения AIha Studio проходит диагностический контур AIha Consulting.
-                При этом AIha Consulting не обязан завершаться внедрением ИИ: иногда достаточно
-                карты рисков, экономики, регламента, data profiling или roadmap автоматизации.
-            </p>
+        <div class="start-card glass-card">
+            <p class="eyebrow">Как работает AIha Ecosystem</p>
+            <h2>От понятной задачи или диагностики — к рабочему AI-решению</h2>
 
             <div class="start-steps">
-                <div><strong>01</strong><span>Фиксируем процесс, боль, данные и ограничения.</span></div>
-                <div><strong>02</strong><span>Считаем экономику, риски и потенциал автоматизации.</span></div>
-                <div><strong>03</strong><span>Определяем, нужен ли MVP и какой scope реалистичен.</span></div>
-                <div><strong>04</strong><span>Передаём проект в Studio только если есть подтверждённый смысл.</span></div>
+                <div>
+                    <strong>01</strong>
+                    <span>Выбираем вход: Studio для понятных задач, Consulting для диагностики процессов и эффекта.</span>
+                </div>
+
+                <div>
+                    <strong>02</strong>
+                    <span>Фиксируем задачу, данные, сценарий работы, ограничения и критерии успеха.</span>
+                </div>
+
+                <div>
+                    <strong>03</strong>
+                    <span>Создаём MVP: бот, ассистент, отчёт, dashboard или автоматизацию.</span>
+                </div>
+
+                <div>
+                    <strong>04</strong>
+                    <span>После проверки ценности масштабируем решение и добавляем интеграции.</span>
+                </div>
+            </div>
+
+            <div class="final-actions">
+                <a href="/studio" class="button button--primary">Запустить AI-решение</a>
+                <a href="/consulting/audit" class="button button--ghost">Пройти AI-аудит</a>
             </div>
         </div>
     </section>
+
 </main>
 
 <footer class="site-footer">
     <div class="site-footer__inner">
         <p>
-            AIha Ecosystem проектирует решения с приоритетом локального хранения,
-            контролируемой обработки данных и измеримого бизнес-эффекта.
+            © AIha. Экосистема практического ИИ для бизнеса:
+            <a href="/studio">AIha Studio</a>,
+            <a href="/consulting">AIha Consulting</a>,
+            <a href="/consulting/audit">AI-аудит</a>.
         </p>
     </div>
 </footer>
 
 </body>
 </html>
+
