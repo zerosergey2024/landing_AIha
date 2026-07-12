@@ -6,11 +6,12 @@ from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 from dotenv import load_dotenv
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from services.diagnostic_final_outputs import get_diagnostic_final_outputs
 
 from db import DB_PATH
-from export_leads_xlsx import export_leads_to_xlsx
+from archive_leads import ARCHIVE_DB_PATH, archive_lead_by_id, init_archive_db
+from export_leads_xlsx import EXPORT_PATH, export_leads_to_xlsx
 from services.ai_agent import run_ai_agent_for_task
 from services.final_outputs import get_final_outputs
 from services.intake_blocks import (
@@ -1041,13 +1042,58 @@ def admin_run_ai_task(task_id: int):
     return redirect(f"/admin/leads/{lead_id_from_result}")
 
 
+@admin_bp.get("/archive")
+def admin_archive():
+    if not admin_required():
+        return redirect("/admin/login")
+
+    init_archive_db()
+
+    with sqlite3.connect(ARCHIVE_DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        archived_leads = conn.execute(
+            """
+            SELECT
+                id,
+                created_at,
+                updated_at,
+                source,
+                name,
+                phone,
+                company,
+                message,
+                industry,
+                process,
+                ai_type,
+                effect,
+                priority,
+                status,
+                manager_comment,
+                archived_at
+            FROM leads
+            ORDER BY archived_at DESC, id DESC
+            """
+        ).fetchall()
+
+    return render_template(
+        "admin_archive.html",
+        archived_leads=archived_leads,
+    )
+
+
 @admin_bp.post("/export-xlsx")
 def admin_export_xlsx():
     if not admin_required():
         return redirect("/admin/login")
 
     export_leads_to_xlsx()
-    return redirect("/admin/leads")
+
+    return send_file(
+        EXPORT_PATH,
+        as_attachment=True,
+        download_name="aiha_leads_export.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @admin_bp.post("/api/leads/<int:lead_id>/status")
@@ -1062,17 +1108,20 @@ def update_lead_status(lead_id: int):
     manager_comment = data.get("manager_comment", "").strip()
 
     if not new_status:
-        return jsonify(
-            {
-                "ok": False,
-                "error": "Некорректный статус.",
-            }
-        ), 400
+        if request.is_json:
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": "Invalid status.",
+                }
+            ), 400
 
-    updated_at = utc_now()
+        return "Invalid status.", 400
+
+    updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
+        cursor = conn.execute(
             """
             UPDATE leads
             SET
@@ -1090,16 +1139,57 @@ def update_lead_status(lead_id: int):
         )
         conn.commit()
 
-    return jsonify(
-        {
-            "ok": True,
-            "lead_id": lead_id,
-            "status": new_status,
-        }
-    )
+    if cursor.rowcount == 0:
+        if request.is_json:
+            return jsonify(
+                {
+                    "ok": False,
+                    "error": "Lead not found.",
+                }
+            ), 404
+
+        return "Lead not found.", 404
+
+    if status_code == "archive":
+        archived = archive_lead_by_id(lead_id)
+
+        if not archived:
+            if request.is_json:
+                return jsonify(
+                    {
+                        "ok": False,
+                        "error": "Lead not found for archive.",
+                    }
+                ), 404
+
+            return "Lead not found for archive.", 404
+
+        if request.is_json:
+            return jsonify(
+                {
+                    "ok": True,
+                    "lead_id": lead_id,
+                    "status": new_status,
+                    "archived": True,
+                }
+            )
+
+        return redirect("/admin/leads")
+
+    if request.is_json:
+        return jsonify(
+            {
+                "ok": True,
+                "lead_id": lead_id,
+                "status": new_status,
+            }
+        )
+
+    return redirect(request.referrer or "/admin/leads")
 
 
 @admin_bp.post("/tasks/<int:task_id>/update")
+
 def admin_update_task(task_id: int):
     if not admin_required():
         return redirect("/admin/login")
