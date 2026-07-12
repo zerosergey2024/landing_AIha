@@ -9,7 +9,6 @@ ACTIVE_DB_PATH = BASE_DIR / "leads.db"
 ARCHIVE_DB_PATH = BASE_DIR / "leads_archive.db"
 
 ARCHIVE_STATUSES = [
-    "Завершено",
     "Архив",
 ]
 
@@ -54,6 +53,72 @@ def init_archive_db():
 
         archive_conn.commit()
 
+
+
+def archive_lead_by_id(lead_id: int) -> bool:
+    """
+    Move one lead from active leads.db to archive leads_archive.db.
+    Used when an admin changes lead status to Archive.
+    """
+    init_archive_db()
+
+    with sqlite3.connect(ACTIVE_DB_PATH) as active_conn, sqlite3.connect(ARCHIVE_DB_PATH) as archive_conn:
+        active_conn.row_factory = sqlite3.Row
+        archive_conn.row_factory = sqlite3.Row
+
+        lead = active_conn.execute(
+            """
+            SELECT *
+            FROM leads
+            WHERE id = ?
+            """,
+            (lead_id,),
+        ).fetchone()
+
+        if lead is None:
+            return False
+
+        active_columns = get_columns(active_conn, "leads")
+        archive_columns = get_columns(archive_conn, "leads")
+
+        insert_columns = [
+            column for column in active_columns
+            if column in archive_columns
+        ]
+
+        if "archived_at" in archive_columns and "archived_at" not in insert_columns:
+            insert_columns.append("archived_at")
+
+        columns_sql = ", ".join(insert_columns)
+        values_sql = ", ".join("?" for _ in insert_columns)
+
+        values = []
+        for column in insert_columns:
+            if column == "archived_at":
+                values.append(now_utc())
+            else:
+                values.append(lead[column])
+
+        archive_conn.execute(
+            f"""
+            INSERT OR REPLACE INTO leads ({columns_sql})
+            VALUES ({values_sql})
+            """,
+            values,
+        )
+
+        active_conn.execute(
+            """
+            DELETE FROM leads
+            WHERE id = ?
+            """,
+            (lead_id,),
+        )
+
+        archive_conn.commit()
+        active_conn.commit()
+
+    return True
 
 def archive_leads():
     init_archive_db()

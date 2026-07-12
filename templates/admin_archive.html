@@ -1,0 +1,95 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>AIha — Архив заявок</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #0b1020;
+            color: #ffffff;
+        }
+
+        a {
+            color: #8fd8ff;
+            font-weight: bold;
+        }
+
+        .lead-card {
+            margin-bottom: 32px;
+            border: 1px solid #334;
+            padding: 20px;
+            background: #121a30;
+        }
+
+        .meta {
+            color: #9fb3d9;
+            margin-bottom: 10px;
+        }
+
+        .qualification {
+            background: #0f172b;
+            padding: 14px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>AIha — Архив заявок</h1>
+
+<p>
+    <a href="/admin/leads">← Вернуться в Lead Pipeline</a>
+</p>
+
+{% if not archived_leads %}
+    <p>В архиве пока нет заявок.</p>
+{% endif %}
+
+{% for lead in archived_leads %}
+
+<div class="lead-card">
+
+    <div class="meta">
+        ID: {{ lead.id }} |
+        Источник: {{ lead.source }} |
+        Создано: {{ lead.created_at }} |
+        Архивировано: {{ lead.archived_at }}
+    </div>
+
+    <h2>{{ lead.name }}</h2>
+
+    <p>
+        <strong>Телефон:</strong> {{ lead.phone }}
+    </p>
+
+    <p>
+        <strong>Компания:</strong> {{ lead.company }}
+    </p>
+
+    <p>
+        <strong>Задача:</strong><br>
+        {{ lead.message }}
+    </p>
+
+    <div class="qualification">
+        <strong>AI-квалификация</strong>
+
+        <p><strong>Отрасль:</strong> {{ lead.industry }}</p>
+        <p><strong>Процесс:</strong> {{ lead.process }}</p>
+        <p><strong>AI-сценарий:</strong> {{ lead.ai_type }}</p>
+        <p><strong>Эффект:</strong> {{ lead.effect }}</p>
+        <p><strong>Приоритет:</strong> {{ lead.priority }}</p>
+        <p><strong>Статус:</strong> {{ lead.status }}</p>
+        <p><strong>Комментарий менеджера:</strong><br>{{ lead.manager_comment }}</p>
+    </div>
+
+</div>
+
+{% endfor %}
+
+</body>
+</html>
