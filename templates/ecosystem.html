@@ -28,7 +28,7 @@
         <a href="/consulting/audit">AI-аудит</a>
     </nav>
 
-    <a href="/studio" class="header-cta">Запустить AI-решение</a>
+    <button class="header-cta" type="button" id="headerCallback">Обратный звонок</button>
 </header>
 
 <main>
@@ -270,6 +270,30 @@
     </div>
 </footer>
 
+
+<button class="callback-float" type="button" id="callbackFloat" aria-label="Заказать обратный звонок">☎</button>
+
+<div class="callback-modal" id="callbackModal" aria-hidden="true">
+    <div class="callback-modal__panel glass-card">
+        <button class="modal-close" type="button" id="modalClose" aria-label="Закрыть">×</button>
+        <h3>Обратный звонок</h3>
+        <p>
+            Оставьте телефон — мы перезвоним, уточним задачу и подскажем,
+            с чего лучше начать: AIha Studio, AIha Consulting или первичный AI-аудит.
+        </p>
+
+        <form id="callbackForm" class="callback-form" method="post" action="/api/callback">
+            <input name="name" placeholder="Имя" required>
+            <input name="phone" placeholder="Телефон" required>
+            <input type="hidden" name="source" value="ecosystem_callback_widget">
+            <button class="button button--primary" type="submit">Заказать звонок</button>
+            <p class="form-status" id="callbackStatus"></p>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
+
 
