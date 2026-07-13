@@ -188,6 +188,26 @@
         font-size: 28px;
       }
     }
+  
+    .diagnostic-input-pack-page form > div:last-of-type {
+      background: rgba(17, 24, 44, 0.92) !important;
+      border: 1px solid rgba(148, 163, 184, 0.22) !important;
+      color: #e5e7eb !important;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
+    }
+
+    .diagnostic-input-pack-page form > div:last-of-type p {
+      color: #c7d2fe !important;
+    }
+
+    .diagnostic-input-pack-page form > div:last-of-type .small-note {
+      color: #b8c7e8 !important;
+    }
+
+    .diagnostic-input-pack-page form > div:last-of-type a {
+      color: #7dd3fc !important;
+      font-weight: 700;
+    }
   </style>
 </head>
 
@@ -911,7 +931,13 @@
           затем будет назначен уточняющий созвон для финализации Diagnostic Input Pack.
         </p>
 
-        <button type="submit" class="btn btn-primary">
+        
+        <p class="small-note">
+          Если удобнее вернуть заполненный бланк, уточнения или дополнительные материалы по почте,
+          отправьте их на <a href="mailto:aiha-ai@mail.ru">aiha-ai@mail.ru</a>.
+          Этот адрес также можно использовать для дальнейшей переписки по диагностике.
+        </p>
+<button type="submit" class="btn btn-primary">
           Отправить Diagnostic Input Pack
         </button>
       </div>
@@ -1003,3 +1029,5 @@
   </script>
 </body>
 </html>
+
+
